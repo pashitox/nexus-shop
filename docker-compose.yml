@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: nexusshop_db
+    environment:
+      POSTGRES_DB: nexus_shop
+      POSTGRES_USER: nexus_user
+      POSTGRES_PASSWORD: nexus_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - nexus_network
+    restart: unless-stopped
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nexusshop_backend
+    environment:
+      DATABASE_URL: "postgresql://nexus_user:nexus_password@postgres:5432/nexus_shop"
+      JWT_SECRET: "tu_jwt_secret_super_seguro_aqui_123456789"
+      STRIPE_SECRET_KEY: "sk_test_..."
+      NODE_ENV: "development"
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - nexus_network
+    restart: unless-stopped
+    command: sh -c "npx prisma generate && npx tsx server.ts"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nexusshop_frontend
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:5001/api"
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_..."
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    networks:
+      - nexus_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  nexus_network:
+    driver: bridge
