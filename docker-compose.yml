@@ -37,7 +37,7 @@ services:
     networks:
       - nexus_network
     restart: unless-stopped
-    command: sh -c "npx prisma generate && npx tsx server.ts"
+    command: sh -c "npx prisma generate && npx tsx prisma/seed.ts && npx tsx server.ts"
 
   frontend:
     build:

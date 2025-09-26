@@ -9,7 +9,7 @@
     "start": "node dist/server.js",
     "db:generate": "npx prisma generate",
     "db:push": "npx prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "tsx src/seed.ts",
     "db:reset": "npx prisma migrate reset --force",
     "test": "jest"
   },

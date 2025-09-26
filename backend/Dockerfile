@@ -9,7 +9,7 @@ RUN apk add --no-cache openssl
 COPY package*.json ./
 RUN npm install
 
-# Copiar el código fuente y Prisma schema
+# Copiar todo el código
 COPY . .
 
 # Generar cliente de Prisma
@@ -18,7 +18,5 @@ RUN npx prisma generate
 # Exponer puerto
 EXPOSE 5001
 
-# Comando de inicio
-CMD ["sh", "-c", "npx prisma generate && npx tsx server.ts"]
-
-
+# Comando de inicio (seed + server)
+CMD ["sh", "-c", "npx prisma generate && npx tsx prisma/seed.ts && npx tsx server.ts"]
