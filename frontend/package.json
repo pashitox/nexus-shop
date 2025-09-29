@@ -1,7 +1,6 @@
 {
   "name": "nexusshop-frontend",
   "version": "1.0.0",
-  "description": "Frontend for NexusShop E-commerce",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,19 +8,29 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.3.0",
+    "clsx": "^2.0.0",
+    "critters": "^0.0.21",
+    "js-cookie": "^3.0.5",
+    "lucide-react": "^0.294.0",
     "next": "14.0.3",
-    "react": "^18",
-    "react-dom": "^18",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "autoprefixer": "^10.0.1",
-    "postcss": "^8",
-    "tailwindcss": "^3.3.0",
-    "typescript": "^5"
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-hook-form": "^7.48.0",
+    "tailwind-merge": "^2.0.0",
+    "zod": "^3.22.4",
+    "zustand": "^4.4.0"
   },
   "devDependencies": {
-    "eslint": "^8",
-    "eslint-config-next": "14.0.3"
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "autoprefixer": "^10.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "14.0.3",
+    "postcss": "^8.0.0",
+    "tailwindcss": "^3.3.0",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.0.0"
   }
 }
