@@ -31,13 +31,14 @@ export const useToast = () => {
   return context;
 };
 
-export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// ✅ Versión mejorada del ToastProvider
+export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
 
   const addToast = (toast: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substr(2, 9);
     const newToast = { ...toast, id };
-    
+
     setToasts(prev => [...prev, newToast]);
 
     // Auto remove after duration
@@ -58,9 +59,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 };
 
-const ToastContainer: React.FC<{ toasts: Toast[]; onRemove: (id: string) => void }> = ({ 
-  toasts, 
-  onRemove 
+const ToastContainer: React.FC<{ toasts: Toast[]; onRemove: (id: string) => void }> = ({
+  toasts,
+  onRemove,
 }) => {
   const [mounted, setMounted] = React.useState(false);
 
@@ -74,21 +75,21 @@ const ToastContainer: React.FC<{ toasts: Toast[]; onRemove: (id: string) => void
     success: CheckCircle,
     error: XCircle,
     warning: AlertTriangle,
-    info: Info
+    info: Info,
   };
 
   const styles = {
     success: 'bg-green-50 border-green-200 text-green-800',
     error: 'bg-red-50 border-red-200 text-red-800',
     warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    info: 'bg-blue-50 border-blue-200 text-blue-800'
+    info: 'bg-blue-50 border-blue-200 text-blue-800',
   };
 
   return createPortal(
     <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
       {toasts.map((toast) => {
         const Icon = icons[toast.type];
-        
+
         return (
           <div
             key={toast.id}
