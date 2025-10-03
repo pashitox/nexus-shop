@@ -31,7 +31,7 @@ export default function ProductPage() {
       setIsLoading(true);
       setError('');
       const productData = await apiClient.getProduct(productId);
-      setProduct(productData);
+      setProduct(productData.data);
     } catch (err: any) {
       setError(err.message || 'Error al cargar el producto');
       console.error('Error loading product:', err);

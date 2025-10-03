@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Order } from '../../types/api.types';
-import { Card, CardContent, CardHeader } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { formatPrice } from '../../lib/utils';
+import { Order } from '../../../types/api.types';
+import { Card, CardContent, CardHeader } from '../../../components/ui/Card';
+import { Button } from '../../../components/ui/Button';
+import { formatPrice } from '../../../lib/utils';
 import { Package, Calendar, ArrowRight, CheckCircle, Clock, Truck } from 'lucide-react';
-import { apiClient } from '../../types/api';
+import { apiClient } from '../../../types/api';
 
 const statusConfig = {
   PENDING: { color: 'bg-yellow-100 text-yellow-800', icon: Clock, label: 'Pendiente' },
@@ -29,7 +29,7 @@ export default function OrdersPage() {
   const loadOrders = async () => {
     try {
       const ordersData = await apiClient.getOrders();
-      setOrders(ordersData);
+      setOrders(ordersData.data || []);
     } catch (error) {
       console.error('Error loading orders:', error);
     } finally {

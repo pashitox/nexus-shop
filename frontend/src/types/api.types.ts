@@ -3,6 +3,8 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
+  createdAt: string; 
+  token?: string; // 🔥 agregado para auth
 }
 
 export interface Product {
@@ -18,7 +20,9 @@ export interface Product {
 }
 
 export interface CartItem {
+  id: string; 
   product: Product;
+  productId: string; 
   quantity: number;
 }
 
@@ -36,9 +40,14 @@ export interface Order {
   paymentMethod: string;
   createdAt: string;
   updatedAt: string;
+  guestEmail?: string; 
+  user?: { 
+    email: string;
+  };
 }
 
 export interface OrderItem {
+  id: string; 
   product: Product;
   quantity: number;
   price: number;
@@ -52,6 +61,9 @@ export interface Address {
   zipCode: string;
   country: string;
   isDefault: boolean;
+  fullName: string; 
+  postalCode: string; 
+  phone?: string; 
 }
 
 export type OrderStatus = 

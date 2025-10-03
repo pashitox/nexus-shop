@@ -8,7 +8,7 @@
     },
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler", // ← USA "bundler" QUE ES LO MODERNO
     "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
@@ -29,7 +29,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/types/**/*.d.ts" // ← Asegúrate de incluir esto
+    "src/types/**/*.d.ts"
   ],
   "exclude": ["node_modules"]
 }

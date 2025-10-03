@@ -6,20 +6,21 @@ import { ProductGrid } from '../components/products/ProductGrid';
 import { apiClient } from '../types/api';
 import { Product } from '../types/api.types';
 import { useEffect, useState } from 'react';
-import { ArrowRight, Shield, Truck, Clock, Star } from 'lucide-react';
+import { ArrowRight, Shield, Truck, Clock } from 'lucide-react';
 
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadFeaturedProducts = async () => {
       try {
-        const response = await apiClient.getProducts({});
-        setFeaturedProducts((response.products || []).slice(0, 8));
-
-      } catch (error) {
-        console.error('Error loading featured products:', error);
+        const response = await apiClient.getProducts();
+        setFeaturedProducts((response.data?.products || []).slice(0, 8));
+      } catch (err) {
+        console.error('Error loading featured products:', err);
+        setError('No se pudieron cargar los productos. Intenta más tarde.');
       } finally {
         setIsLoading(false);
       }
@@ -46,9 +47,13 @@ export default function HomePage() {
                   Ver Productos
                 </Button>
               </Link>
-              <Link href="/categories">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary-600">
-                  Explorar Categorías
+              <Link href="/contact">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white text-white hover:bg-white hover:text-primary-600"
+                >
+                  Contáctanos
                 </Button>
               </Link>
             </div>
@@ -110,40 +115,13 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        ) : error ? (
+          <p className="text-center text-red-500">{error}</p>
+        ) : featuredProducts.length === 0 ? (
+          <p className="text-center text-gray-500">No se encontraron productos.</p>
         ) : (
           <ProductGrid products={featuredProducts} />
         )}
-      </section>
-
-      {/* Categories Section */}
-      <section className="bg-gray-50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">Explora por Categorías</h2>
-            <p className="text-gray-600 mt-2">Encuentra lo que buscas fácilmente</p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { name: 'Electrónicos', slug: 'electronics', color: 'bg-blue-100', icon: '📱' },
-              { name: 'Ropa', slug: 'clothing', color: 'bg-green-100', icon: '👕' },
-              { name: 'Hogar', slug: 'home', color: 'bg-yellow-100', icon: '🏠' },
-              { name: 'Deportes', slug: 'sports', color: 'bg-red-100', icon: '⚽' },
-            ].map((category) => (
-              <Link
-                key={category.slug}
-                href={`/products?category=${category.slug}`}
-                className="block group"
-              >
-                <div className={`${category.color} rounded-lg p-6 text-center group-hover:shadow-lg transition-shadow`}>
-                  <div className="text-4xl mb-3">{category.icon}</div>
-                  <h3 className="font-semibold text-gray-900">{category.name}</h3>
-                  <p className="text-sm text-gray-600 mt-1">Ver productos</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
       </section>
     </div>
   );

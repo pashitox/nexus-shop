@@ -25,7 +25,7 @@ export default function CheckoutSuccessPage() {
   const loadOrder = async () => {
     try {
       const orderData = await apiClient.getOrder(orderId!);
-      setOrder(orderData);
+      setOrder(orderData.data);
     } catch (error) {
       console.error('Error loading order:', error);
     } finally {
