@@ -29,7 +29,11 @@ interface CartState {
   getTotal: () => number;
   getItemCount: () => number;
   mergeCarts: (userCart: Cart, guestCart: Cart) => Promise<void>;
+  loadCart: () => Promise<void>; // ✅ NUEVO: Cargar carrito al iniciar
 }
+
+
+
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -83,20 +87,56 @@ export const useCartStore = create<CartState>()(
       isLoading: false,
       cart: null,
 
+      // ✅ Cargar carrito al inicializar
+      loadCart: async () => {
+        const state = get();
+        try {
+          set({ isLoading: true });
+          const sessionId = state.sessionId || generateSessionId();
+          const response = await apiClient.getCart(sessionId);
+          set({ 
+            cart: response.data || { items: [] },
+            sessionId 
+          });
+        } catch (error) {
+          console.error('Error loading cart:', error);
+          set({ cart: { items: [] } });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
       addItem: async (product, quantity = 1) => {
         const state = get();
-        const sessionId = state.sessionId || generateSessionId();
-        await apiClient.addToCart(product.id, quantity, sessionId);
-        const cart = await apiClient.getCart(sessionId);
-        set({ cart: cart.data || { items: [] }, sessionId });
+        try {
+          set({ isLoading: true });
+          const sessionId = state.sessionId || generateSessionId();
+          await apiClient.addToCart(product.id, quantity, sessionId);
+          const cartResponse = await apiClient.getCart(sessionId);
+          set({ 
+            cart: cartResponse.data || { items: [] }, 
+            sessionId 
+          });
+        } catch (error) {
+          console.error('Error adding item to cart:', error);
+          throw error;
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
       removeItem: async (itemId) => {
-        const state = get();
-        await apiClient.removeFromCart(itemId);
-        if (state.cart) {
-          const updatedCart = await apiClient.getCart(state.sessionId || undefined);
-          set({ cart: updatedCart.data || { items: [] } });
+        try {
+          set({ isLoading: true });
+          await apiClient.removeFromCart(itemId);
+          const state = get();
+          const cartResponse = await apiClient.getCart(state.sessionId || undefined);
+          set({ cart: cartResponse.data || { items: [] } });
+        } catch (error) {
+          console.error('Error removing item from cart:', error);
+          throw error;
+        } finally {
+          set({ isLoading: false });
         }
       },
 
@@ -105,11 +145,18 @@ export const useCartStore = create<CartState>()(
           get().removeItem(itemId);
           return;
         }
-        await apiClient.updateCartItem(itemId, quantity);
-        const state = get();
-        if (state.cart) {
-          const updatedCart = await apiClient.getCart(state.sessionId || undefined);
-          set({ cart: updatedCart.data || { items: [] } });
+        
+        try {
+          set({ isLoading: true });
+          await apiClient.updateCartItem(itemId, quantity);
+          const state = get();
+          const cartResponse = await apiClient.getCart(state.sessionId || undefined);
+          set({ cart: cartResponse.data || { items: [] } });
+        } catch (error) {
+          console.error('Error updating cart item:', error);
+          throw error;
+        } finally {
+          set({ isLoading: false });
         }
       },
 

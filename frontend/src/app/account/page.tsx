@@ -22,17 +22,14 @@ export default function AccountPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-  });
+  const [formData, setFormData] = useState({ name: '', email: '' });
   const [stats, setStats] = useState<UserStats>({
     orderCount: 0,
     totalSpent: 0,
     addressCount: 0,
   });
 
-  // 📌 Función para cargar estadísticas del usuario desde la API
+  // 📌 Cargar estadísticas del usuario
   const loadUserStats = async () => {
     try {
       const ordersResponse = await apiClient.getOrders();
@@ -41,10 +38,10 @@ export default function AccountPage() {
       const addressesResponse = await apiClient.getAddresses();
       const addresses = addressesResponse.data || [];
 
-      // Calcular estadísticas
-      const totalSpent = orders.reduce((total: number, order: any) => {
-        return total + (Number(order.total) || 0);
-      }, 0);
+      const totalSpent = orders.reduce(
+        (total: number, order: any) => total + (Number(order.total) || 0),
+        0
+      );
 
       setStats({
         orderCount: orders.length,
@@ -53,15 +50,11 @@ export default function AccountPage() {
       });
     } catch (error) {
       console.error('Error loading stats:', error);
-      setStats({
-        orderCount: 0,
-        totalSpent: 0,
-        addressCount: 0,
-      });
+      setStats({ orderCount: 0, totalSpent: 0, addressCount: 0 });
     }
   };
 
-  // 📌 Cargar datos del usuario y estadísticas
+  // 📌 Cargar datos iniciales
   useEffect(() => {
     const loadUserData = async () => {
       if (!isAuthenticated || !user) {
@@ -71,14 +64,7 @@ export default function AccountPage() {
 
       try {
         setError(null);
-
-        // Inicializar formulario con datos del store
-        setFormData({
-          name: user.name || '',
-          email: user.email || '',
-        });
-
-        // Cargar estadísticas reales
+        setFormData({ name: user.name || '', email: user.email || '' });
         await loadUserStats();
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -98,18 +84,10 @@ export default function AccountPage() {
       setIsSaving(true);
       setError(null);
 
-      // Aquí iría la llamada real a la API de update profile
-      console.log('Actualizando perfil:', formData);
+      // Llamada real a API pendiente
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simular delay
-
-      // Actualizar en el store
-      setUser({
-        ...user,
-        name: formData.name,
-        email: formData.email,
-      });
-
+      setUser({ ...user, name: formData.name, email: formData.email });
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -120,15 +98,11 @@ export default function AccountPage() {
   };
 
   const handleCancel = () => {
-    setFormData({
-      name: user?.name || '',
-      email: user?.email || '',
-    });
+    setFormData({ name: user?.name || '', email: user?.email || '' });
     setIsEditing(false);
     setError(null);
   };
 
-  // 📌 Loading
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -139,7 +113,6 @@ export default function AccountPage() {
     );
   }
 
-  // 📌 Usuario no autenticado
   if (!isAuthenticated || !user) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8 text-center">
@@ -147,18 +120,13 @@ export default function AccountPage() {
           <h2 className="text-xl font-semibold text-yellow-800 mb-2">
             Acceso Requerido
           </h2>
-          <p className="text-yellow-700">
-            Debes iniciar sesión para ver tu perfil
-          </p>
+          <p className="text-yellow-700">Debes iniciar sesión para ver tu perfil</p>
         </div>
-        <Button onClick={() => router.push('/auth/login')}>
-          Iniciar Sesión
-        </Button>
+        <Button onClick={() => router.push('/auth/login')}>Iniciar Sesión</Button>
       </div>
     );
   }
 
-  // 📌 Página principal de cuenta
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       {/* Header */}
@@ -188,20 +156,20 @@ export default function AccountPage() {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
-          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-          <p className="text-red-800 text-sm">{error}</p>
+        <div className="bg-error-50 border border-error-200 rounded-lg p-4 flex items-start space-x-3">
+          <AlertCircle className="w-5 h-5 text-error-600 mt-0.5 flex-shrink-0" />
+          <p className="text-error-800 text-sm">{error}</p>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Perfil */}
+        {/* Columna izquierda - Perfil */}
         <div className="lg:col-span-2 space-y-6">
           <Card>
-            <CardHeader className="bg-gray-50 border-b border-gray-200">
+            <CardHeader>
               <h2 className="text-lg font-semibold text-gray-900">Información Personal</h2>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="space-y-4">
               <Input
                 label="Nombre completo"
                 value={formData.name}
@@ -229,40 +197,52 @@ export default function AccountPage() {
           </Card>
         </div>
 
-        {/* Navegación + Stats */}
+        {/* Columna derecha - Navegación y Stats */}
         <div className="space-y-6">
+          {/* Navegación rápida */}
           <Card>
-            <CardHeader className="bg-gray-50 border-b border-gray-200">
+            <CardHeader>
               <h3 className="font-semibold text-gray-900">Accesos Rápidos</h3>
             </CardHeader>
-            <CardContent className="p-4 space-y-2">
-              <Button variant="outline" className="w-full justify-start" onClick={() => router.push('/account/addresses')}>
+            <CardContent className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => router.push('/account/addresses')}
+              >
                 <MapPin className="w-4 h-4 mr-2" />
                 Mis Direcciones
               </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => router.push('/orders')}>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => router.push('/orders')}
+              >
                 <Package className="w-4 h-4 mr-2" />
                 Mis Pedidos
               </Button>
             </CardContent>
           </Card>
 
+          {/* Stats */}
           <Card>
-            <CardHeader className="bg-gray-50 border-b border-gray-200">
+            <CardHeader>
               <h3 className="font-semibold text-gray-900">Resumen</h3>
             </CardHeader>
-            <CardContent className="p-4 space-y-4">
+            <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Pedidos</span>
                 <span className="font-semibold text-primary-600">{stats.orderCount}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Total Gastado</span>
-                <span className="font-semibold text-green-600">${stats.totalSpent.toLocaleString()}</span>
+                <span className="font-semibold text-success-600">
+                  ${stats.totalSpent.toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Direcciones</span>
-                <span className="font-semibold text-blue-600">{stats.addressCount}</span>
+                <span className="font-semibold text-primary-600">{stats.addressCount}</span>
               </div>
             </CardContent>
           </Card>
