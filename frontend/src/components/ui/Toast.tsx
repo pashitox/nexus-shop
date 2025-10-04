@@ -31,7 +31,6 @@ export const useToast = () => {
   return context;
 };
 
-// ✅ Versión mejorada del ToastProvider
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
 
@@ -69,6 +68,7 @@ const ToastContainer: React.FC<{ toasts: Toast[]; onRemove: (id: string) => void
     setMounted(true);
   }, []);
 
+  // ✅ IMPORTANTE: No renderizar nada hasta estar montado en el cliente
   if (!mounted) return null;
 
   const icons = {

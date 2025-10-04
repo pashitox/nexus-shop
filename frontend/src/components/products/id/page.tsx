@@ -4,12 +4,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Product } from '../../../types/api.types';
 import { apiClient } from '../../../types/api';
-import { ProductDetails } from '../../products/ProductDetails';
-import { LoadingSpinner } from '../../ui/LoadingSpinner';
-import { Button } from '../../ui/Button';
+import { ProductDetails } from '../../../components/products/ProductDetails';
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
+import { Button } from '../../../components/ui/Button';
 import { ArrowLeft } from 'lucide-react';
-
-
 
 export default function ProductPage() {
   const params = useParams();

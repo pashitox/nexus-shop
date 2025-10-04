@@ -13,7 +13,8 @@ export const useAuth = () => {
       
       if (savedToken && !isAuthenticated) {
         try {
-          const profile = await apiClient.getProfile(savedToken);
+          // ✅ CORREGIDO: getProfile ya no recibe parámetros
+          const profile = await apiClient.getProfile();
           setAuth(profile.data?.user, savedToken);
         } catch (err) {
           localStorage.removeItem('token');

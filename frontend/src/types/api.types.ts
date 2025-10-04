@@ -4,7 +4,7 @@ export interface User {
   name: string;
   avatar?: string;
   createdAt: string; 
-  token?: string; // 🔥 agregado para auth
+  token?: string; 
 }
 
 export interface Product {
@@ -55,15 +55,16 @@ export interface OrderItem {
 
 export interface Address {
   id: string;
+  userId: string;
+  fullName: string;
   street: string;
   city: string;
   state: string;
-  zipCode: string;
+  postalCode: string;  
   country: string;
+  phone?: string;
   isDefault: boolean;
-  fullName: string; 
-  postalCode: string; 
-  phone?: string; 
+  createdAt: string;
 }
 
 export type OrderStatus = 

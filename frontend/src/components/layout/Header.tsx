@@ -4,19 +4,52 @@ import Link from 'next/link';
 import { useAuthStore, useCartStore } from '@/lib/store';
 import { Button } from '@/components/ui/Button';
 import { ShoppingCart, User, Menu, Search } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // ✅ Agregar useEffect
 import { useRouter } from 'next/navigation';
 
 export const Header: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const { getItemCount } = useCartStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false); // ✅ Nuevo estado
   const router = useRouter();
+
+  // ✅ Solo ejecutar en el cliente
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
     router.push('/');
   };
+
+  // ✅ Evitar renderizado durante hydration
+  if (!isMounted) {
+    return (
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo skeleton */}
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gray-300 rounded-lg animate-pulse"></div>
+              <div className="w-24 h-6 bg-gray-300 rounded animate-pulse"></div>
+            </div>
+            {/* Navigation skeleton */}
+            <div className="hidden md:flex space-x-8">
+              <div className="w-12 h-6 bg-gray-300 rounded animate-pulse"></div>
+              <div className="w-16 h-6 bg-gray-300 rounded animate-pulse"></div>
+            </div>
+            {/* Actions skeleton */}
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse"></div>
+              <div className="w-20 h-9 bg-gray-300 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -40,7 +73,7 @@ export const Header: React.FC = () => {
           {/* User & Cart Actions */}
           <div className="flex items-center space-x-4">
             
-            {/* Cart */}
+            {/* Cart - ✅ Ahora seguro para hydration */}
             <Link href="/cart" className="relative p-2 text-gray-700 hover:text-primary-600 transition-colors">
               <ShoppingCart className="w-6 h-6" />
               {getItemCount() > 0 && (
@@ -115,7 +148,6 @@ export const Header: React.FC = () => {
             <div className="flex flex-col space-y-3 px-2">
               <Link href="/" className="text-gray-700 hover:text-primary-600" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
               <Link href="/products" className="text-gray-700 hover:text-primary-600" onClick={() => setIsMenuOpen(false)}>Productos</Link>
-              <Link href="/categories" className="text-gray-700 hover:text-primary-600" onClick={() => setIsMenuOpen(false)}>Categorías</Link>
               
               {/* Mobile Search */}
               <div className="relative mt-2">

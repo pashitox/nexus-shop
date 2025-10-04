@@ -6,7 +6,7 @@ import { Product } from '../../types/api.types';
 import { formatPrice } from '../../lib/utils';
 import { Button } from '../../components/ui/Button';
 import { ShoppingCart, Star, Heart } from 'lucide-react';
-import { useCartStore } from '../../lib/store';
+import { useCart } from '../../hooks/useCart'; // ✅ Usar el hook en lugar del store directamente
 import { useState } from 'react';
 
 interface ProductCardProps {
@@ -14,16 +14,19 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { addItem } = useCartStore();
+  const { addItem } = useCart(); // ✅ Usar el hook que maneja notificaciones
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
+    if (product.stock === 0) return;
+    
     setIsAdding(true);
     try {
       await addItem(product, 1);
+      // ✅ Las notificaciones se manejan automáticamente en el hook
     } catch (error) {
       console.error('Error adding to cart:', error);
     } finally {
@@ -49,7 +52,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           />
           
           {/* Wishlist Button */}
-          <button className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
+          <button 
+            className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // TODO: Implementar wishlist
+            }}
+          >
             <Heart className="w-4 h-4 text-gray-600" />
           </button>
 
@@ -103,8 +113,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <span className="text-2xl font-bold text-gray-900">
                 {formatPrice(product.price)}
               </span>
-              {product.stock > 0 && (
+              {product.stock > 0 ? (
                 <p className="text-sm text-green-600">En stock ({product.stock})</p>
+              ) : (
+                <p className="text-sm text-red-600">Agotado</p>
               )}
             </div>
 
@@ -116,7 +128,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               className="flex-shrink-0"
             >
               <ShoppingCart className="w-4 h-4 mr-1" />
-              Agregar
+              {isAdding ? 'Agregando...' : 'Agregar'}
             </Button>
           </div>
         </div>
