@@ -7,7 +7,7 @@ import { useAuthStore } from '@/lib/store';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
-import { Eye, EyeOff, Mail, Lock, Github, Loader } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Loader } from 'lucide-react';
 
 // ✅ Componente para el botón de Google
 const GoogleIcon = () => (
@@ -102,27 +102,6 @@ export default function LoginPage() {
     }
   };
 
-  // ✅ MÉTODO ALTERNATIVO - Si el anterior falla
-  const handleGoogleLoginAlternative = () => {
-    setError('');
-    setGoogleLoading(true);
-
-    // ✅ PARÁMETROS MÍNIMOS Y VÁLIDOS
-    const params = new URLSearchParams({
-      client_id: '479463812136-c44nrt1h74i6t8re4tb6ut8dgia4ud0g.apps.googleusercontent.com',
-      redirect_uri: window.location.origin,
-      response_type: 'id_token',
-      scope: 'openid email profile',
-      nonce: Math.random().toString(36).substring(2, 15),
-      prompt: 'select_account'
-    });
-
-    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
-    
-    // Redirigir directamente
-    window.location.href = googleAuthUrl;
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -158,24 +137,6 @@ export default function LoginPage() {
                 <span className="text-gray-700 font-medium">
                   {googleLoading ? 'Conectando...' : 'Continuar con Google'}
                 </span>
-              </Button>
-
-              {/* Botón alternativo si el principal falla */}
-              <div className="text-center">
-                <button 
-                  onClick={handleGoogleLoginAlternative}
-                  className="text-sm text-primary-600 hover:text-primary-700 underline"
-                >
-                  ¿Problemas con Google? Usar método alternativo
-                </button>
-              </div>
-
-              <Button 
-                variant="outline" 
-                className="w-full flex items-center justify-center space-x-3 py-3 border-gray-300 hover:bg-gray-50 transition-all duration-200"
-              >
-                <Github className="w-5 h-5 text-gray-700" />
-                <span className="text-gray-700 font-medium">Continuar con GitHub</span>
               </Button>
             </div>
 
