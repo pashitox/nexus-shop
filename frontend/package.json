@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",
+    "@types/google.accounts": "^0.0.18",
     "clsx": "^2.0.0",
     "critters": "^0.0.21",
     "js-cookie": "^3.0.5",

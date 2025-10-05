@@ -3,8 +3,10 @@ import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { generateToken } from '../utils/jwt';
 import { ApiResponse } from '../types/api.types';
+import { OAuth2Client } from 'google-auth-library';
 
 const prisma = new PrismaClient();
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export class AuthController {
   // 🔐 Registro de usuario
@@ -165,18 +167,148 @@ export class AuthController {
     }
   }
 
-  // 🌐 Google OAuth (placeholder)
+  // 🌐 Google OAuth - CORREGIDO
   static async googleAuth(req: Request, res: Response) {
     try {
-      const response: ApiResponse = {
-        success: false,
-        message: 'Google OAuth no implementado aún',
+      const { token: googleToken } = req.body;
+
+      console.log('🔑 Google auth iniciado');
+
+      if (!googleToken) {
+        return res.status(400).json({
+          success: false,
+          message: 'Token de Google es requerido'
+        });
+      }
+
+      // Verificar token de Google
+      const ticket = await client.verifyIdToken({
+        idToken: googleToken,
+        audience: process.env.GOOGLE_CLIENT_ID
+      });
+
+      const payload = ticket.getPayload();
+
+      if (!payload) {
+        return res.status(401).json({
+          success: false,
+          message: 'Token de Google inválido'
+        });
+      }
+
+      const { email, name, picture, sub: googleId } = payload;
+
+      console.log('👤 Payload de Google:', { email, name, googleId });
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email no proporcionado por Google'
+        });
+      }
+
+      // Buscar usuario por email o googleId
+      let user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email },
+            { providerId: googleId }
+          ]
+        }
+      });
+
+      console.log('🔍 Usuario encontrado:', user ? 'Sí' : 'No');
+
+      // Crear usuario si no existe
+      if (!user) {
+        console.log('👤 Creando nuevo usuario...');
+        user = await prisma.user.create({
+          data: {
+            email,
+            name: name || email.split('@')[0],
+            image: picture,
+            provider: 'google',
+            providerId: googleId,
+            password: '' // Campo requerido pero no usado
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            provider: true,
+            providerId: true,
+            createdAt: true
+          }
+        });
+        console.log('✅ Usuario creado:', user.id);
+      }
+
+      // Generar JWT token - CORREGIDO
+      const jwtToken = generateToken(user as any);
+
+      console.log('🎫 JWT generado:', {
+        tokenLength: jwtToken.length,
+        userId: user.id
+      });
+
+      const response = {
+        success: true,
+        message: 'Login con Google exitoso',
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+            provider: user.provider
+          },
+          token: jwtToken
+        }
       };
-      res.status(501).json(response);
+
+      console.log('✅ Google auth completado exitosamente');
+      res.status(200).json(response);
+
     } catch (error) {
+      console.error('❌ Error en Google auth:', error);
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: 'Error al autenticar con Google'
+      });
+    }
+  }
+
+  // 🧪 Endpoint de debug
+  static async debugToken(req: Request, res: Response) {
+    try {
+      console.log('🔐 Debug token endpoint llamado');
+      
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'No autenticado',
+          debug: {
+            hasUser: false,
+            headers: req.headers
+          }
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Token válido',
+        debug: {
+          hasUser: true,
+          user: req.user,
+          headers: req.headers
+        }
+      });
+    } catch (error) {
+      console.error('Error en debug token:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error en debug'
       });
     }
   }

@@ -9,19 +9,52 @@ const handleResponse = async (res: Response) => {
 };
 
 const getToken = (): string | null => {
-  if (typeof window !== 'undefined') {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    // ✅ BUSCAR PRIMERO EN ZUSTAND STORAGE
     const authStorage = localStorage.getItem('auth-storage');
     if (authStorage) {
-      try {
-        const authData = JSON.parse(authStorage);
-        return authData.state?.token || null;
-      } catch (error) {
-        console.error('Error parsing auth storage:', error);
-        return null;
+      const parsed = JSON.parse(authStorage);
+      
+      // ✅ MULTIPLES ESTRUCTURAS POSIBLES
+      const token = 
+        parsed?.state?.token ||        // Zustand persist estándar
+        parsed?.token ||               // Estructura simple
+        parsed?.user?.token;           // Token en user object
+      
+      if (token && typeof token === 'string') {
+        console.log('Token encontrado en auth-storage:', token.substring(0, 20) + '...');
+        return token;
       }
     }
+
+    // ✅ BUSCAR EN LOCALSTORAGE LEGACY
+    const legacyToken = localStorage.getItem('token');
+    if (legacyToken) {
+      console.log('Token encontrado en localStorage legacy');
+      return legacyToken;
+    }
+
+    console.log('No se encontró token');
+    return null;
+  } catch (error) {
+    console.error('Error getting token:', error);
+    return null;
   }
-  return null;
+};
+
+// ✅ FUNCIÓN PARA DEBUG
+const debugToken = () => {
+  const token = getToken();
+  console.log('🔐 Token debug:', {
+    hasToken: !!token,
+    tokenLength: token?.length,
+    tokenPreview: token ? token.substring(0, 20) + '...' : null,
+    authStorage: localStorage.getItem('auth-storage') ? 'EXISTS' : 'MISSING',
+    legacyToken: localStorage.getItem('token') ? 'EXISTS' : 'MISSING'
+  });
+  return token;
 };
 
 export const apiClient = {
@@ -38,17 +71,29 @@ export const apiClient = {
 
   // 📦 Órdenes
   getOrders: async () => {
-    const token = getToken();
+    const token = debugToken(); // ✅ Usar debug para ver qué pasa
+    if (!token) throw new Error('No token available');
+
+    console.log('🔐 Enviando token en request:', token.substring(0, 20) + '...');
+    
     const res = await fetch(`${BASE_URL}/orders`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
     });
     return handleResponse(res);
   },
 
   getOrder: async (id: string) => {
     const token = getToken();
+    if (!token) throw new Error('No token available');
+
     const res = await fetch(`${BASE_URL}/orders/${id}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
     });
     return handleResponse(res);
   },
@@ -59,7 +104,7 @@ export const apiClient = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
+        ...(token && { 'Authorization': `Bearer ${token}` }),
       },
       body: JSON.stringify(orderData),
     });
@@ -90,9 +135,23 @@ export const apiClient = {
     if (!token) throw new Error('No token available');
 
     const res = await fetch(`${BASE_URL}/auth/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
     });
     return handleResponse(res);
+  },
+
+  googleLogin: async (token: string) => {
+    const response = await fetch(`${BASE_URL}/auth/google`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token }),
+    });
+    return handleResponse(response);
   },
 
   // 🏠 Direcciones
@@ -101,7 +160,10 @@ export const apiClient = {
     if (!token) throw new Error('No token available');
 
     const res = await fetch(`${BASE_URL}/addresses`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
     });
     return handleResponse(res);
   },
@@ -114,7 +176,7 @@ export const apiClient = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(addressData),
     });
@@ -129,7 +191,7 @@ export const apiClient = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(addressData),
     });
@@ -142,7 +204,10 @@ export const apiClient = {
 
     const res = await fetch(`${BASE_URL}/addresses/${id}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
     });
     return handleResponse(res);
   },
@@ -153,7 +218,10 @@ export const apiClient = {
 
     const res = await fetch(`${BASE_URL}/addresses/${id}/default`, {
       method: 'PUT',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
     });
     return handleResponse(res);
   },
@@ -167,7 +235,10 @@ export const apiClient = {
 
     const res = await fetch(url, {
       method: 'GET',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token ? { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } : {},
     });
     return handleResponse(res);
   },
@@ -178,7 +249,7 @@ export const apiClient = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
+        ...(token && { 'Authorization': `Bearer ${token}` }),
       },
       body: JSON.stringify({ productId, quantity, sessionId }),
     });
@@ -191,7 +262,7 @@ export const apiClient = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
+        ...(token && { 'Authorization': `Bearer ${token}` }),
       },
       body: JSON.stringify({ quantity }),
     });
@@ -202,7 +273,10 @@ export const apiClient = {
     const token = getToken();
     const res = await fetch(`${BASE_URL}/cart/${itemId}`, {
       method: 'DELETE',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token ? { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } : {},
     });
     return handleResponse(res);
   },

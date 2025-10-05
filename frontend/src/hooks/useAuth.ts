@@ -1,10 +1,19 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '../lib/store';
-import { apiClient } from '../types/api';
+import { apiClient } from '../types/api'; // Asegúrate que esta ruta sea correcta
 import { useToast } from './useToast';
 
 export const useAuth = () => {
-  const { user, token, isAuthenticated, setAuth, logout } = useAuthStore();
+  // ✅ USAR LAS FUNCIONES CORRECTAS DEL STORE
+  const { 
+    user, 
+    token, 
+    isAuthenticated, 
+    setUser, 
+    setToken,
+    logout 
+  } = useAuthStore();
+  
   const { error: toastError } = useToast();
 
   useEffect(() => {
@@ -13,9 +22,10 @@ export const useAuth = () => {
       
       if (savedToken && !isAuthenticated) {
         try {
-          // ✅ CORREGIDO: getProfile ya no recibe parámetros
           const profile = await apiClient.getProfile();
-          setAuth(profile.data?.user, savedToken);
+          // ✅ USAR setUser Y setToken EN LUGAR DE setAuth
+          setUser(profile.data?.user);
+          setToken(savedToken);
         } catch (err) {
           localStorage.removeItem('token');
           toastError('Sesión expirada', 'Por favor, inicia sesión nuevamente');
@@ -24,12 +34,14 @@ export const useAuth = () => {
     };
 
     checkAuth();
-  }, [isAuthenticated, setAuth, toastError]);
+  }, [isAuthenticated, setUser, setToken, toastError]);
 
   const login = async (email: string, password: string) => {
     try {
       const response = await apiClient.login(email, password);
-      setAuth(response.data?.user, response.data?.token);
+      // ✅ USAR setUser Y setToken
+      setUser(response.data?.user);
+      setToken(response.data?.token);
       return response;
     } catch (err: any) {
       throw new Error(err.message || 'Error al iniciar sesión');
@@ -39,7 +51,9 @@ export const useAuth = () => {
   const register = async (email: string, password: string, name: string) => {
     try {
       const response = await apiClient.register(email, password, name);
-      setAuth(response.data?.user, response.data?.token);
+      // ✅ USAR setUser Y setToken
+      setUser(response.data?.user);
+      setToken(response.data?.token);
       return response;
     } catch (err: any) {
       throw new Error(err.message || 'Error al registrar la cuenta');

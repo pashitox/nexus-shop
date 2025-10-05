@@ -16,10 +16,8 @@ router.post('/google', AuthController.googleAuth);
 // 🔒 Rutas protegidas
 //
 router.get('/profile', authenticateToken, AuthController.getProfile);
+router.get('/debug-token', authenticateToken, AuthController.debugToken); // ✅ Nuevo endpoint
 router.post('/logout', authenticateToken, AuthController.logout);
 router.post('/refresh', authenticateToken, AuthController.refreshToken);
 
-//
-// 📤 Exportar router
-//
 export { router as authRoutes };
