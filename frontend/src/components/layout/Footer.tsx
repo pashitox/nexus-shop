@@ -33,7 +33,7 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Quick Links - SOLO PÁGINAS QUE EXISTEN */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-gray-100">Enlaces Rápidos</h3>
             <ul className="space-y-2">
@@ -43,41 +43,30 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="text-gray-300 hover:text-white transition-colors">
-                  Nosotros
+                <Link href="/cart" className="text-gray-300 hover:text-white transition-colors">
+                  Carrito
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-300 hover:text-white transition-colors">
-                  Contacto
+                <Link href="/profile" className="text-gray-300 hover:text-white transition-colors">
+                  Mi Cuenta
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Customer Service */}
+          {/* Información Útil */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-100">Servicio al Cliente</h3>
+            <h3 className="text-lg font-semibold mb-4 text-gray-100">Información</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/help" className="text-gray-300 hover:text-white transition-colors">
-                  Ayuda
-                </Link>
+                <span className="text-gray-300">Email: info@nexusshop.com</span>
               </li>
               <li>
-                <Link href="/shipping" className="text-gray-300 hover:text-white transition-colors">
-                  Envíos
-                </Link>
+                <span className="text-gray-300">Soporte 24/7</span>
               </li>
               <li>
-                <Link href="/returns" className="text-gray-300 hover:text-white transition-colors">
-                  Devoluciones
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy" className="text-gray-300 hover:text-white transition-colors">
-                  Privacidad
-                </Link>
+                <span className="text-gray-300">Envíos a todo el país</span>
               </li>
             </ul>
           </div>
@@ -87,12 +76,7 @@ export const Footer: React.FC = () => {
         <div className="border-t border-gray-800 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-400 text-sm">&copy; 2024 NexusShop. Todos los derechos reservados.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <Link href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors">
-              Términos de Servicio
-            </Link>
-            <Link href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors">
-              Política de Privacidad
-            </Link>
+            <span className="text-gray-400 text-sm">Desarrollado con ❤️</span>
           </div>
         </div>
       </div>
