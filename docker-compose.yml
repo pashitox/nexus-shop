@@ -1,4 +1,4 @@
-version: "3.9"
+
 
 services:
   postgres:
@@ -82,7 +82,7 @@ services:
       # ⚙️ Next.js Configuration
       NODE_ENV: "development"
     ports:
-      - "3001:3000"
+      - "3000:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules

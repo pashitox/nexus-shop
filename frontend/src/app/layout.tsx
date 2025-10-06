@@ -7,6 +7,9 @@ import { ToastProvider } from '@/components/ui/Toast';
 
 const inter = Inter({ subsets: ['latin'] });
 
+
+
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
