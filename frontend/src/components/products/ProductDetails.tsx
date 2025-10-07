@@ -32,24 +32,20 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
   };
 
   const increaseQuantity = () => {
-    if (quantity < product.stock) {
-      setQuantity(quantity + 1);
-    }
+    if (quantity < product.stock) setQuantity(quantity + 1);
   };
 
   const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
+    if (quantity > 1) setQuantity(quantity - 1);
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-white">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Product Images */}
         <div className="space-y-4">
           {/* Main Image */}
-          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+          <div className="aspect-square bg-gray-900 rounded-lg overflow-hidden">
             <Image
               src={images[selectedImage]}
               alt={product.name}
@@ -65,7 +61,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
               <button
                 key={index}
                 onClick={() => setSelectedImage(index)}
-                className={`aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 ${
+                className={`aspect-square bg-gray-800 rounded-lg overflow-hidden border-2 ${
                   selectedImage === index ? 'border-primary-600' : 'border-transparent'
                 }`}
               >
@@ -86,7 +82,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
           {/* Category and Breadcrumb */}
           <div>
             <span className="text-primary-600 font-medium">{product.category}</span>
-            <h1 className="text-3xl font-bold text-gray-900 mt-2">{product.name}</h1>
+            <h1 className="text-3xl font-bold mt-2">{product.name}</h1>
           </div>
 
           {/* Rating and Reviews */}
@@ -101,17 +97,15 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
                 />
               ))}
             </div>
-            <span className="text-gray-600">4.2 (42 reseñas)</span>
-            <span className="text-green-600 font-medium">En stock</span>
+            <span className="text-gray-300">4.2 (42 reseñas)</span>
+            <span className="text-green-400 font-medium">En stock</span>
           </div>
 
           {/* Price */}
           <div className="flex items-baseline space-x-2">
-            <span className="text-4xl font-bold text-gray-900">
-              {formatPrice(product.price)}
-            </span>
+            <span className="text-4xl font-bold">{formatPrice(product.price)}</span>
             {product.price > 1000 && (
-              <span className="text-lg text-gray-500 line-through">
+              <span className="text-lg text-gray-400 line-through">
                 {formatPrice(product.price * 1.2)}
               </span>
             )}
@@ -120,34 +114,30 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
           {/* Description */}
           <div>
             <h3 className="text-lg font-semibold mb-2">Descripción</h3>
-            <p className="text-gray-700 leading-relaxed">{product.description}</p>
+            <p className="leading-relaxed">{product.description}</p>
           </div>
 
           {/* Quantity Selector */}
           <div className="flex items-center space-x-4">
             <span className="text-lg font-medium">Cantidad:</span>
-            <div className="flex items-center border border-gray-300 rounded-lg">
+            <div className="flex items-center border border-gray-700 rounded-lg">
               <button
                 onClick={decreaseQuantity}
                 disabled={quantity <= 1}
-                className="px-3 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                className="px-3 py-2 text-gray-300 hover:text-white disabled:opacity-50"
               >
                 -
               </button>
-              <span className="px-4 py-2 border-x border-gray-300 min-w-[60px] text-center">
-                {quantity}
-              </span>
+              <span className="px-4 py-2 border-x border-gray-700 min-w-[60px] text-center">{quantity}</span>
               <button
                 onClick={increaseQuantity}
                 disabled={quantity >= product.stock}
-                className="px-3 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                className="px-3 py-2 text-gray-300 hover:text-white disabled:opacity-50"
               >
                 +
               </button>
             </div>
-            <span className="text-sm text-gray-500">
-              {product.stock} disponibles
-            </span>
+            <span className="text-sm text-gray-400">{product.stock} disponibles</span>
           </div>
 
           {/* Action Buttons */}
@@ -169,17 +159,17 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
           </div>
 
           {/* Features */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-gray-700">
             <div className="flex items-center space-x-2">
-              <Truck className="w-5 h-5 text-green-600" />
+              <Truck className="w-5 h-5 text-green-400" />
               <span className="text-sm">Envío gratis</span>
             </div>
             <div className="flex items-center space-x-2">
-              <RotateCcw className="w-5 h-5 text-green-600" />
+              <RotateCcw className="w-5 h-5 text-green-400" />
               <span className="text-sm">Devolución fácil</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Shield className="w-5 h-5 text-green-600" />
+              <Shield className="w-5 h-5 text-green-400" />
               <span className="text-sm">Garantía</span>
             </div>
           </div>
