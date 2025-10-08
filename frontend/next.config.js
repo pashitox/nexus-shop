@@ -16,7 +16,14 @@ const nextConfig = {
       },
     ],
   },
-  // Quitar output: 'standalone' si lo tienes
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://backend:5001/api/:path*', // 👈 proxy hacia tu backend en Docker
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

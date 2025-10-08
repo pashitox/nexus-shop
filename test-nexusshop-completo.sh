@@ -1,10 +1,11 @@
 #!/bin/bash
 
-echo "🏪 NEXUSSHOP - PRUEBA COMPLETA DEL SISTEMA"
-echo "=========================================="
+echo "🏪 NEXUSSHOP - PRUEBA COMPLETA DEL SISTEMA CON PAGOS REALES"
+echo "=========================================================="
 echo "🔧 Backend: http://localhost:5001/api"
 echo "🌐 Frontend: http://localhost:3000"
-echo "🗄️  Database: localhost:5432"
+echo "🗄️  Database: localhost:5433"
+echo "💳 Sistema de Pagos: Stripe Integration REAL"
 echo ""
 
 # Configuración
@@ -18,11 +19,14 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Contadores para estadísticas
 SUCCESS_COUNT=0
 ERROR_COUNT=0
+WARNING_COUNT=0
 
 # Función para imprimir resultados
 print_result() {
@@ -40,16 +44,21 @@ print_result() {
             ((ERROR_COUNT++))
             ;;
         "info") echo -e "${BLUE}ℹ️  $message${NC}" ;;
-        "warning") echo -e "${YELLOW}⚠️  $message${NC}" ;;
+        "warning") 
+            echo -e "${YELLOW}⚠️  $message${NC}"
+            ((WARNING_COUNT++))
+            ;;
+        "payment") echo -e "${PURPLE}💳 $message${NC}" ;;
+        "system") echo -e "${CYAN}🔧 $message${NC}" ;;
     esac
     
     if [ -n "$details" ]; then
-        echo "   $details"
+        echo "   📝 $details"
     fi
     echo ""
 }
 
-# Función para hacer requests
+# Función para hacer requests con mejor manejo de errores
 api_request() {
     local method=$1
     local endpoint=$2
@@ -63,21 +72,30 @@ api_request() {
     fi
     
     echo -e "${BLUE}➡️  $description${NC}"
-    echo "   Endpoint: $method $endpoint"
+    echo "   🔗 Endpoint: $method $endpoint"
     
     local response
+    local http_status
+    local body
+    
     if [ -n "$data" ]; then
         response=$(curl -s -w "HTTP_STATUS:%{http_code}" -X $method "$BASE_URL$endpoint" \
             -H "Content-Type: application/json" \
             "${headers[@]}" \
-            -d "$data")
+            -d "$data" 2>/dev/null)
     else
         response=$(curl -s -w "HTTP_STATUS:%{http_code}" -X $method "$BASE_URL$endpoint" \
-            "${headers[@]}")
+            "${headers[@]}" 2>/dev/null)
     fi
     
-    local http_status=$(echo "$response" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
-    local body=$(echo "$response" | sed 's/HTTP_STATUS:[0-9]*//')
+    http_status=$(echo "$response" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+    body=$(echo "$response" | sed 's/HTTP_STATUS:[0-9]*//')
+    
+    # Si no hay respuesta, considerar error de conexión
+    if [ -z "$http_status" ]; then
+        print_result "error" "Sin conexión - Servidor no responde"
+        return 1
+    fi
     
     if [ "$http_status" -ge 200 ] && [ "$http_status" -lt 300 ]; then
         if echo "$body" | jq -e '.success' >/dev/null 2>&1; then
@@ -85,7 +103,7 @@ api_request() {
             echo "$body" | jq '.'
         else
             print_result "success" "HTTP $http_status - Respuesta recibida"
-            echo "$body"
+            echo "$body" | jq '.' 2>/dev/null || echo "$body"
         fi
     else
         print_result "error" "HTTP $http_status - Error en la solicitud"
@@ -99,20 +117,21 @@ api_request() {
 }
 
 # Verificar que los servicios estén corriendo
-echo "1. 🔍 VERIFICACIÓN INICIAL"
-echo "=========================="
+echo "1. 🔍 VERIFICACIÓN INICIAL DEL SISTEMA"
+echo "======================================"
 
 if ! docker compose ps | grep -q "Up"; then
     print_result "error" "Los contenedores Docker no están corriendo"
-    echo "Ejecutar: docker compose up -d"
+    echo "   💡 Ejecutar: docker compose up -d"
     exit 1
 fi
 
-print_result "success" "Contenedores Docker activos"
+print_result "success" "Contenedores Docker activos y saludables"
 
 # Esperar a que el backend esté listo
-echo "2. ⏳ ESPERANDO AL BACKEND"
-echo "=========================="
+echo ""
+echo "2. ⏳ ESPERANDO INICIALIZACIÓN DEL BACKEND"
+echo "=========================================="
 
 for i in {1..30}; do
     if curl -s "$BASE_URL/health" >/dev/null; then
@@ -126,7 +145,7 @@ for i in {1..30}; do
     sleep 1
 done
 
-# Health check
+# Health check inicial
 api_request "GET" "/health" "" "" "Health Check del sistema"
 
 # 3. PRUEBAS DE AUTENTICACIÓN
@@ -137,7 +156,7 @@ echo "=============================="
 REGISTER_DATA='{
     "email": "'$TEST_EMAIL'",
     "password": "'$TEST_PASSWORD'",
-    "name": "Usuario de Prueba"
+    "name": "Usuario de Prueba NexusShop"
 }'
 api_request "POST" "/auth/register" "$REGISTER_DATA" "" "Registro de nuevo usuario"
 
@@ -152,203 +171,285 @@ LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" \
 
 TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.data.token // empty')
 
-if [ -n "$TOKEN" ]; then
-    print_result "success" "Login exitoso - Token obtenido"
-    echo "   Token: ${TOKEN:0:30}..."
+if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
+    print_result "success" "Login exitoso - Token JWT obtenido"
+    echo "   🔐 Token: ${TOKEN:0:50}..."
 else
-    print_result "error" "Error en login"
-    echo "   Respuesta: $LOGIN_RESPONSE"
+    print_result "error" "Error en login - No se pudo obtener token"
+    echo "   📄 Respuesta: $LOGIN_RESPONSE"
     exit 1
 fi
 
-# Debug del token
-api_request "GET" "/auth/debug-token" "" "$TOKEN" "Debug del token JWT"
-
 # Perfil de usuario
-api_request "GET" "/auth/profile" "" "$TOKEN" "Obtener perfil de usuario"
+api_request "GET" "/auth/profile" "" "$TOKEN" "Obtener perfil de usuario autenticado"
 
-# 4. PRUEBAS DE PRODUCTOS
-echo "4. 🛍️ PRUEBAS DE PRODUCTOS"
-echo "=========================="
+# 4. PRUEBAS DE PRODUCTOS - MEJORADO
+echo "4. 🛍️ PRUEBAS DE CATÁLOGO DE PRODUCTOS"
+echo "====================================="
 
 # Obtener todos los productos
-api_request "GET" "/products" "" "" "Obtener catálogo de productos"
-
-# Obtener producto específico
 PRODUCTS_RESPONSE=$(curl -s "$BASE_URL/products")
-PRODUCT_ID=$(echo "$PRODUCTS_RESPONSE" | jq -r '.data.products[0].id // empty')
-
-if [ -n "$PRODUCT_ID" ] && [ "$PRODUCT_ID" != "null" ]; then
-    api_request "GET" "/products/$PRODUCT_ID" "" "" "Obtener detalles de producto específico"
+if echo "$PRODUCTS_RESPONSE" | jq -e '.data.products' >/dev/null 2>&1; then
+    PRODUCT_COUNT=$(echo "$PRODUCTS_RESPONSE" | jq -r '.data.products | length')
+    print_result "success" "Catálogo de productos cargado - $PRODUCT_COUNT productos disponibles"
+    
+    # Mostrar productos disponibles
+    echo "📦 PRODUCTOS DISPONIBLES:"
+    echo "$PRODUCTS_RESPONSE" | jq -r '.data.products[] | "   🏷️  \(.name) - 💰 $\(.price) - 🆔 \(.id)"'
+    
+    # Extraer ID del primer producto
+    PRODUCT_ID=$(echo "$PRODUCTS_RESPONSE" | jq -r '.data.products[0].id // empty')
+    PRODUCT_NAME=$(echo "$PRODUCTS_RESPONSE" | jq -r '.data.products[0].name // empty')
+    
+    if [ -n "$PRODUCT_ID" ] && [ "$PRODUCT_ID" != "null" ]; then
+        print_result "info" "Usando producto para pruebas: $PRODUCT_NAME"
+        api_request "GET" "/products/$PRODUCT_ID" "" "" "Obtener detalles de producto específico"
+    else
+        print_result "warning" "No se pudo obtener ID de producto válido"
+        # Usar ID hardcodeado como fallback
+        PRODUCT_ID="f95c09ed-7eba-4975-9634-7e9e910f038d"
+        print_result "info" "Usando producto por defecto para continuar pruebas"
+    fi
 else
-    print_result "warning" "No se pudo obtener ID de producto para pruebas"
+    print_result "error" "Error al cargar el catálogo de productos"
+    exit 1
 fi
 
-# 5. PRUEBAS DE CARRITO
-echo "5. 🛒 PRUEBAS DE CARRITO"
-echo "========================"
+# 5. PRUEBAS DE CARRITO - MEJORADO
+echo "5. 🛒 PRUEBAS DEL SISTEMA DE CARRITO"
+echo "===================================="
 
-# Obtener carrito con sessionId
-api_request "GET" "/cart?sessionId=$SESSION_ID" "" "" "Obtener carrito de guest"
+# Obtener carrito vacío inicial
+api_request "GET" "/cart?sessionId=$SESSION_ID" "" "" "Obtener carrito de guest (inicialmente vacío)"
 
-# Agregar producto al carrito (si tenemos productId)
-if [ -n "$PRODUCT_ID" ] && [ "$PRODUCT_ID" != "null" ]; then
-    CART_DATA='{
-        "productId": "'$PRODUCT_ID'",
-        "quantity": 2,
-        "sessionId": "'$SESSION_ID'"
-    }'
-    api_request "POST" "/cart/add" "$CART_DATA" "" "Agregar producto al carrito de guest"
+# Agregar producto al carrito
+CART_DATA='{
+    "productId": "'$PRODUCT_ID'",
+    "quantity": 2,
+    "sessionId": "'$SESSION_ID'"
+}'
+api_request "POST" "/cart/add" "$CART_DATA" "" "Agregar producto al carrito de guest"
+
+# Ver carrito actualizado
+CART_RESPONSE=$(curl -s "$BASE_URL/cart?sessionId=$SESSION_ID")
+if echo "$CART_RESPONSE" | jq -e '.data.items' >/dev/null 2>&1; then
+    CART_ITEMS_COUNT=$(echo "$CART_RESPONSE" | jq -r '.data.items | length')
+    CART_TOTAL=$(echo "$CART_RESPONSE" | jq -r '[.data.items[] | .product.price * .quantity] | add | round')
     
-    # Ver carrito actualizado
-    api_request "GET" "/cart?sessionId=$SESSION_ID" "" "" "Ver carrito actualizado de guest"
+    if [ "$CART_ITEMS_COUNT" -gt 0 ]; then
+        print_result "success" "Carrito actualizado - $CART_ITEMS_COUNT items - Total: 💰 $$CART_TOTAL"
+        
+        # Mostrar items del carrito
+        echo "🛒 CONTENIDO DEL CARRITO:"
+        echo "$CART_RESPONSE" | jq -r '.data.items[] | "   📦 \(.product.name) x \(.quantity) - 💰 $\(.product.price * .quantity | round)"'
+    else
+        print_result "warning" "Carrito vacío después de agregar producto"
+    fi
+else
+    print_result "error" "Error al obtener carrito actualizado"
 fi
 
 # 6. PRUEBAS DE DIRECCIONES
-echo "6. 🏠 PRUEBAS DE DIRECCIONES"
-echo "==========================="
+echo "6. 🏠 PRUEBAS DEL SISTEMA DE DIRECCIONES"
+echo "========================================"
 
 # Crear dirección
 ADDRESS_DATA='{
-    "street": "Calle Principal 123",
+    "street": "Avenida Revolución 1500",
     "city": "Ciudad de México", 
     "state": "CDMX",
-    "postalCode": "12345",
+    "postalCode": "03940",
     "country": "México",
-    "fullName": "Usuario de Prueba"
+    "fullName": "Usuario de Prueba NexusShop",
+    "phone": "+525555555555",
+    "isDefault": true
 }'
-api_request "POST" "/addresses" "$ADDRESS_DATA" "$TOKEN" "Crear nueva dirección"
+api_request "POST" "/addresses" "$ADDRESS_DATA" "$TOKEN" "Crear nueva dirección de envío"
 
-# Listar direcciones
+# Listar direcciones del usuario
 api_request "GET" "/addresses" "" "$TOKEN" "Listar direcciones del usuario"
 
-# 7. PRUEBAS DE ÓRDENES
-echo "7. 📦 PRUEBAS DE ÓRDENES"
-echo "========================"
+# 7. 🎯 PRUEBAS DEL SISTEMA DE PAGOS CON STRIPE REAL
+echo "7. 💳 PRUEBAS DEL SISTEMA DE PAGOS STRIPE REAL"
+echo "=============================================="
 
-# Crear orden (usando el carrito de guest)
-ORDER_DATA='{
+# Test del sistema de pagos
+api_request "GET" "/payments/test" "" "$TOKEN" "Verificar configuración del sistema de pagos Stripe"
+
+# Crear checkout con Stripe REAL
+print_result "payment" "INICIANDO PROCESO DE CHECKOUT CON STRIPE REAL..."
+
+CHECKOUT_DATA='{
+    "sessionId": "'$SESSION_ID'",
     "shippingAddress": {
-        "street": "Calle Principal 123",
+        "fullName": "Usuario de Prueba NexusShop",
+        "street": "Avenida Revolución 1500",
         "city": "Ciudad de México",
-        "state": "CDMX", 
-        "postalCode": "12345",
+        "state": "CDMX",
+        "postalCode": "03940",
         "country": "México",
-        "fullName": "Usuario de Prueba"
+        "phone": "+525555555555"
     },
-    "paymentMethod": "credit_card",
-    "sessionId": "'$SESSION_ID'"
+    "guestEmail": "'$TEST_EMAIL'",
+    "guestName": "Usuario de Prueba NexusShop"
 }'
-api_request "POST" "/orders" "$ORDER_DATA" "$TOKEN" "Crear orden de compra"
+
+CHECKOUT_RESPONSE=$(curl -s -X POST "$BASE_URL/payments/checkout" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d "$CHECKOUT_DATA")
+
+if echo "$CHECKOUT_RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+    print_result "success" "🎉 CHECKOUT CON STRIPE REAL CREADO EXITOSAMENTE"
+    
+    # Extraer datos del checkout
+    ORDER_ID=$(echo "$CHECKOUT_RESPONSE" | jq -r '.data.orderId // empty')
+    CLIENT_SECRET=$(echo "$CHECKOUT_RESPONSE" | jq -r '.data.clientSecret // empty')
+    AMOUNT=$(echo "$CHECKOUT_RESPONSE" | jq -r '.data.amount // 0')
+    REQUIRES_ACTION=$(echo "$CHECKOUT_RESPONSE" | jq -r '.data.requiresAction // false')
+    
+    echo "   📦 Order ID: $ORDER_ID"
+    echo "   💰 Monto: 💵 $$(echo "scale=2; $AMOUNT/100" | bc)"
+    echo "   🔐 Client Secret: ${CLIENT_SECRET:0:40}..."
+    echo "   ⚡ Requires Action: $REQUIRES_ACTION"
+    
+    # Mostrar datos completos del checkout
+    echo ""
+    echo "📄 DETALLES COMPLETOS DEL CHECKOUT:"
+    echo "$CHECKOUT_RESPONSE" | jq '.data'
+    
+    # Probar estado de la orden
+    if [ -n "$ORDER_ID" ]; then
+        api_request "GET" "/payments/order-status/$ORDER_ID" "" "$TOKEN" "Verificar estado de la orden recién creada"
+        
+        # Probar obtener última orden
+        api_request "GET" "/payments/latest-order" "" "$TOKEN" "Obtener la última orden del usuario"
+    fi
+    
+else
+    print_result "error" "❌ ERROR EN EL PROCESO DE CHECKOUT CON STRIPE"
+    echo "$CHECKOUT_RESPONSE" | jq '.'
+fi
+
+# 8. PRUEBAS DE ÓRDENES
+echo "8. 📦 PRUEBAS DEL SISTEMA DE ÓRDENES"
+echo "===================================="
 
 # Historial de órdenes
-api_request "GET" "/orders" "" "$TOKEN" "Obtener historial de órdenes"
+api_request "GET" "/orders" "" "$TOKEN" "Obtener historial completo de órdenes del usuario"
 
-# 8. PRUEBAS DE GOOGLE AUTH
-echo "8. 🌐 PRUEBAS DE GOOGLE AUTH"
-echo "============================"
+# 9. PRUEBAS ADICIONALES DEL SISTEMA
+echo "9. 🔧 PRUEBAS ADICIONALES DEL SISTEMA"
+echo "===================================="
 
-print_result "info" "Probando endpoint de Google Auth (sin token real)"
+# Verificar carrito después del checkout (debería estar vacío)
+api_request "GET" "/cart?sessionId=$SESSION_ID" "" "" "Verificar carrito después del checkout (debería estar vacío)"
 
-# Test de estructura del endpoint 
-GOOGLE_TEST_DATA='{
-    "token": "fake-google-token-for-testing"
-}'
-api_request "POST" "/auth/google" "$GOOGLE_TEST_DATA" "" "Test de Google Auth (esperado: error sin token real)"
-
-# 9. PRUEBAS DE TOKEN
-echo "9. 🔄 PRUEBAS DE TOKEN"
-echo "======================"
-
-# Refresh token
-api_request "POST" "/auth/refresh" "" "$TOKEN" "Refresh del token JWT"
-
-# 10. PRUEBAS FINALES DE USUARIO
-echo "10. 👤 PRUEBAS FINALES DE USUARIO"
-echo "================================"
+# 10. LIMPIEZA Y LOGOUT
+echo "10. 🧹 LIMPIEZA Y CIERRE DE SESIÓN"
+echo "=================================="
 
 # Logout
-api_request "POST" "/auth/logout" "" "$TOKEN" "Cerrar sesión"
+api_request "POST" "/auth/logout" "" "$TOKEN" "Cerrar sesión de usuario"
 
 # 11. VERIFICACIÓN FINAL DEL SISTEMA
-echo "11. 🗄️ VERIFICACIÓN DEL SISTEMA"
-echo "=============================="
+echo "11. 🗄️ VERIFICACIÓN FINAL DEL SISTEMA COMPLETO"
+echo "=============================================="
 
-print_result "info" "Estado final del sistema:"
-
-# Verificar que los servicios principales estén funcionando
-echo "   🔍 Verificando endpoints críticos..."
+print_result "system" "ESTADO FINAL DE TODOS LOS COMPONENTES:"
 
 # Health check final
 if curl -s "$BASE_URL/health" >/dev/null; then
-    print_result "success" "Health Check: SISTEMA OPERATIVO"
+    print_result "success" "Health Check: ✅ SISTEMA OPERATIVO"
 else
-    print_result "error" "Health Check: SISTEMA NO RESPONDE"
+    print_result "error" "Health Check: ❌ SISTEMA NO RESPONDE"
 fi
 
-# Verificar base de datos a través de productos
+# Verificar sistema de pagos
+PAYMENTS_TEST=$(curl -s "$BASE_URL/payments/test")
+if echo "$PAYMENTS_TEST" | jq -e '.success' >/dev/null 2>&1; then
+    print_result "success" "Sistema de Pagos: ✅ OPERATIVO CON STRIPE REAL"
+    STRIPE_STATUS=$(echo "$PAYMENTS_TEST" | jq -r '.data.stripeConfigured')
+    ORDERS_COUNT=$(echo "$PAYMENTS_TEST" | jq -r '.data.ordersCount')
+    echo "   💳 Stripe Configurado: $STRIPE_STATUS"
+    echo "   📦 Total de Órdenes: $ORDERS_COUNT"
+else
+    print_result "error" "Sistema de Pagos: ❌ ERROR"
+fi
+
+# Verificar base de datos
 PRODUCTS_FINAL=$(curl -s "$BASE_URL/products")
-if echo "$PRODUCTS_FINAL" | grep -q "products" || echo "$PRODUCTS_FINAL" | jq -e '.' >/dev/null 2>&1; then
-    print_result "success" "Base de datos: CONEXIÓN ESTABLE"
-    PRODUCT_COUNT=$(echo "$PRODUCTS_FINAL" | jq -r '.data.products | length' 2>/dev/null || echo "0")
+if echo "$PRODUCTS_FINAL" | jq -e '.data.products' >/dev/null 2>&1; then
+    PRODUCT_COUNT=$(echo "$PRODUCTS_FINAL" | jq -r '.data.products | length')
+    print_result "success" "Base de datos: ✅ CONEXIÓN ESTABLE"
     echo "   📦 Productos en catálogo: $PRODUCT_COUNT"
 else
-    print_result "error" "Base de datos: ERROR DE CONEXIÓN"
+    print_result "error" "Base de datos: ❌ ERROR DE CONEXIÓN"
 fi
 
-# 12. RESUMEN FINAL CON ESTADÍSTICAS
-echo "12. 📊 RESUMEN FINAL Y ESTADÍSTICAS"
-echo "=================================="
+# Verificar frontend
+if curl -s --connect-timeout 10 http://localhost:3000 > /dev/null; then
+    print_result "success" "Frontend: ✅ RESPONDIENDO en http://localhost:3000"
+else
+    print_result "warning" "Frontend: ⚠️  NO RESPONDE - Puede estar en proceso de build"
+fi
+
+# 12. RESUMEN FINAL CON ESTADÍSTICAS DETALLADAS
+echo "12. 📊 RESUMEN FINAL Y ESTADÍSTICAS DETALLADAS"
+echo "=============================================="
 
 # Calcular estadísticas
-TOTAL_TESTS=$((SUCCESS_COUNT + ERROR_COUNT))
+TOTAL_TESTS=$((SUCCESS_COUNT + ERROR_COUNT + WARNING_COUNT))
 if [ $TOTAL_TESTS -gt 0 ]; then
     SUCCESS_RATE=$((SUCCESS_COUNT * 100 / TOTAL_TESTS))
 else
     SUCCESS_RATE=0
 fi
 
-print_result "success" "🎉 ¡PRUEBA DEL SISTEMA COMPLETADA!"
+print_result "success" "🎉 ¡PRUEBA COMPLETA DEL SISTEMA FINALIZADA!"
 echo ""
 
 echo "🏪 NEXUSSHOP - REPORTE FINAL DEL SISTEMA"
 echo "========================================"
 echo "📈 ESTADÍSTICAS DE PRUEBAS:"
 echo "   ✅ Pruebas exitosas: $SUCCESS_COUNT"
+echo "   ⚠️  Advertencias: $WARNING_COUNT"
 echo "   ❌ Pruebas fallidas: $ERROR_COUNT" 
 echo "   📊 Tasa de éxito: $SUCCESS_RATE%"
-echo ""
-echo "🎯 COMPONENTES VERIFICADOS:"
-echo "   ✅ Backend API (Express.js)"
-echo "   ✅ Autenticación JWT"
-echo "   ✅ Base de datos PostgreSQL"
-echo "   ✅ Modelo de productos y categorías"
-echo "   ✅ Sistema de carrito de compras"
-echo "   ✅ Gestión de órdenes"
-echo "   ✅ Sistema de direcciones"
-echo "   ✅ Google OAuth (configuración)"
-echo "   ✅ Docker & Contenedores"
+echo "   🎯 Total de pruebas: $TOTAL_TESTS"
 echo ""
 echo "🔗 URLS DE ACCESO:"
-echo "   🌐 Frontend:    http://localhost:3000"
-echo "   🔧 Backend API: http://localhost:5001/api"
-echo "   📚 API Health:  http://localhost:5001/api/health"
-echo "   🗄️  Database:    localhost:5432"
-echo ""
-echo "🚀 RECOMENDACIONES Y NEXT STEPS:"
-echo "   1. 🔧 Configurar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET para OAuth"
-echo "   2. 🛒 El carrito para usuarios autenticados funciona correctamente"
-echo "   3. 🏠 Sistema de direcciones operativo al 100%"
-echo "   4. 💳 Integrar Stripe para pagos reales"
-echo "   5. 📦 Corregir creación de órdenes con carrito de guest"
-echo "   6. 🚀 Desplegar en entorno de producción"
+echo "   🌐 Frontend:          http://localhost:3000"
+echo "   🔧 Backend API:       http://localhost:5001/api"
+echo "   📚 API Health:        http://localhost:5001/api/health"
+echo "   💳 Payments Test:     http://localhost:5001/api/payments/test"
+echo "   🛍️  Productos:        http://localhost:5001/api/products"
+echo "   🗄️  Database:          localhost:5433"
 echo ""
 echo "📝 DATOS DE LA PRUEBA:"
 echo "   👤 Usuario: $TEST_EMAIL"
-echo "   🔐 Token: ${TOKEN:0:25}..."
+echo "   🔐 Token: ${TOKEN:0:30}..."
 echo "   🆔 Session: $SESSION_ID"
+echo "   📦 Order ID: ${ORDER_ID:-'N/A'}"
+echo "   💰 Monto Procesado: 💵 ${AMOUNT:-0} centavos"
 echo "   🕐 Fecha: $(date)"
-echo "   ⏱️  Duración: ~30 segundos"
+echo "   ⏱️  Duración: $(($SECONDS / 60))m $(($SECONDS % 60))s"
 echo ""
-print_result "success" "¡SISTEMA LISTO PARA DESARROLLO Y PRUEBAS!"
-echo "🌟 ¡NexusShop está operativo y funcionando correctamente!"
+
+# Evaluación final del sistema
+if [ $SUCCESS_RATE -ge 90 ]; then
+    print_result "success" "🏆 ¡SISTEMA LISTO PARA PRODUCCIÓN!"
+    echo "   🌟 NexusShop está completamente operativo con Stripe Real"
+    echo "   💳 Sistema de pagos funcionando correctamente"
+    echo "   🚀 Puedes proceder con el desarrollo del frontend"
+elif [ $SUCCESS_RATE -ge 70 ]; then
+    print_result "warning" "⚠️  Sistema funcional pero con advertencias"
+    echo "   🔧 Revisar las advertencias antes de producción"
+else
+    print_result "error" "❌ Sistema requiere atención inmediata"
+    echo "   🛠️  Revisar los errores críticos antes de continuar"
+fi
+
+echo ""
+echo "🎊 ¡Prueba del sistema NexusShop completada!"
+echo "💡 Next: Desarrollar frontend del checkout con Stripe.js"

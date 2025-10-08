@@ -1,4 +1,4 @@
-
+version: '3.8'
 
 services:
   postgres:
@@ -27,25 +27,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: nexusshop_backend
-    environment:
-      # 🗄️ Base de Datos
-      DATABASE_URL: "postgresql://nexus_user:nexus_password@postgres:5432/nexus_shop"
-      
-      # 🔐 Seguridad
-      JWT_SECRET: "tu_jwt_secret_super_seguro_aqui_nexusshop_2024"
-      
-      # 💳 Stripe
-      STRIPE_SECRET_KEY: "sk_test_51ABC123...reemplazar_con_clave_real_de_prueba"
-      STRIPE_WEBHOOK_SECRET: "whsec_123...reemplazar_con_webhook_secret_de_prueba"
-      
-      # 🔑 Google OAuth
-      GOOGLE_CLIENT_ID: "479463812136-c44nrt1h74i6t8re4tb6ut8dgia4ud0g.apps.googleusercontent.com"
-      GOOGLE_CLIENT_SECRET: "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"
-      
-      # ⚙️ Configuración
-      NODE_ENV: "development"
-      PORT: "5001"
-      CORS_ORIGIN: "http://localhost:3001"
+    # ⚠️ REMOVIMOS TODAS LAS VARIABLES DE AQUÍ - se cargarán desde backend/.env
     ports:
       - "5001:5001"
     volumes:
@@ -68,19 +50,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: nexusshop_frontend
-    environment:
-      # 🌐 API Configuration
-      NEXT_PUBLIC_API_URL: "http://localhost:5001/api"
-      NEXT_PUBLIC_BACKEND_URL: "http://localhost:5001"
-      
-      # 💳 Stripe Frontend
-      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_..."
-      
-      # 🔑 Google OAuth Frontend
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: "479463812136-c44nrt1h74i6t8re4tb6ut8dgia4ud0g.apps.googleusercontent.com"
-      
-      # ⚙️ Next.js Configuration
-      NODE_ENV: "development"
+    # ⚠️ REMOVIMOS TODAS LAS VARIABLES DE AQUÍ - se cargarán desde frontend/.env
     ports:
       - "3000:3000"
     volumes:
@@ -93,11 +63,6 @@ services:
     networks:
       - nexus_network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 volumes:
   postgres_data:

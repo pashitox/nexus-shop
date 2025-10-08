@@ -12,31 +12,19 @@ const getToken = (): string | null => {
   if (typeof window === 'undefined') return null;
 
   try {
-    // ✅ BUSCAR PRIMERO EN ZUSTAND STORAGE
     const authStorage = localStorage.getItem('auth-storage');
     if (authStorage) {
       const parsed = JSON.parse(authStorage);
-      
-      // ✅ MULTIPLES ESTRUCTURAS POSIBLES
       const token = 
-        parsed?.state?.token ||        // Zustand persist estándar
-        parsed?.token ||               // Estructura simple
-        parsed?.user?.token;           // Token en user object
-      
-      if (token && typeof token === 'string') {
-        console.log('Token encontrado en auth-storage:', token.substring(0, 20) + '...');
-        return token;
-      }
+        parsed?.state?.token || 
+        parsed?.token || 
+        parsed?.user?.token;
+      if (token && typeof token === 'string') return token;
     }
 
-    // ✅ BUSCAR EN LOCALSTORAGE LEGACY
     const legacyToken = localStorage.getItem('token');
-    if (legacyToken) {
-      console.log('Token encontrado en localStorage legacy');
-      return legacyToken;
-    }
+    if (legacyToken) return legacyToken;
 
-    console.log('No se encontró token');
     return null;
   } catch (error) {
     console.error('Error getting token:', error);
@@ -44,7 +32,7 @@ const getToken = (): string | null => {
   }
 };
 
-// ✅ FUNCIÓN PARA DEBUG
+// Para debug
 const debugToken = () => {
   const token = getToken();
   console.log('🔐 Token debug:', {
@@ -71,10 +59,8 @@ export const apiClient = {
 
   // 📦 Órdenes
   getOrders: async () => {
-    const token = debugToken(); // ✅ Usar debug para ver qué pasa
+    const token = debugToken();
     if (!token) throw new Error('No token available');
-
-    console.log('🔐 Enviando token en request:', token.substring(0, 20) + '...');
     
     const res = await fetch(`${BASE_URL}/orders`, {
       headers: { 
@@ -146,9 +132,7 @@ export const apiClient = {
   googleLogin: async (token: string) => {
     const response = await fetch(`${BASE_URL}/auth/google`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     });
     return handleResponse(response);
@@ -229,9 +213,7 @@ export const apiClient = {
   // 🛒 Carrito
   getCart: async (sessionId?: string) => {
     const token = getToken();
-    const url = sessionId
-      ? `${BASE_URL}/cart?sessionId=${sessionId}`
-      : `${BASE_URL}/cart`;
+    const url = sessionId ? `${BASE_URL}/cart?sessionId=${sessionId}` : `${BASE_URL}/cart`;
 
     const res = await fetch(url, {
       method: 'GET',
@@ -277,6 +259,16 @@ export const apiClient = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       } : {},
+    });
+    return handleResponse(res);
+  },
+
+  // 💳 Checkout / Pagos
+  checkout: async (sessionId: string) => {
+    const res = await fetch(`${BASE_URL}/payments/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
     });
     return handleResponse(res);
   },
