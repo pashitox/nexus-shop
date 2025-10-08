@@ -1,3 +1,4 @@
+// frontend/src/lib/api.ts - VERSIÓN COMPLETA CORREGIDA
 import { Product, User, Cart, Order, Address } from './api.types';
 
 const BASE_URL = 'http://localhost:5001/api';
@@ -120,6 +121,20 @@ export const apiClient = {
     const token = getToken();
     if (!token) throw new Error('No token available');
 
+    const res = await fetch(`${BASE_URL}/auth/profile`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+    });
+    return handleResponse(res);
+  },
+
+  // ✅ MÉTODO FALTANTE 1: testAuth
+  testAuth: async () => {
+    const token = getToken();
+    if (!token) throw new Error('No token available');
+    
     const res = await fetch(`${BASE_URL}/auth/profile`, {
       headers: { 
         'Authorization': `Bearer ${token}`,
@@ -264,12 +279,51 @@ export const apiClient = {
   },
 
   // 💳 Checkout / Pagos
-  checkout: async (sessionId: string) => {
+  checkout: async (sessionId: string, checkoutData?: any) => {
+    const token = getToken();
     const res = await fetch(`${BASE_URL}/payments/checkout`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId }),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: JSON.stringify({
+        sessionId,
+        ...checkoutData
+      }),
     });
     return handleResponse(res);
   },
+
+  // ✅ MÉTODO FALTANTE 2: getOrderStatus
+  getOrderStatus: async (orderId: string) => {
+    const token = getToken();
+    const res = await fetch(`${BASE_URL}/payments/order-status/${orderId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+    });
+    return handleResponse(res);
+  },
+
+  // ✅ MÉTODO FALTANTE 3: getLatestOrder
+  getLatestOrder: async () => {
+    const token = getToken();
+    if (!token) throw new Error('No token available');
+
+    const res = await fetch(`${BASE_URL}/payments/latest-order`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+    });
+    return handleResponse(res);
+  },
+
+  // ✅ MÉTODO FALTANTE 4: testPaymentSystem
+  testPaymentSystem: async () => {
+    const res = await fetch(`${BASE_URL}/payments/test`);
+    return handleResponse(res);
+  }
 };

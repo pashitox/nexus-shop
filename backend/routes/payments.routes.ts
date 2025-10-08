@@ -1,7 +1,6 @@
-// backend/src/routes/payments.routes.ts - VERSIÓN CORREGIDA
 import { Router } from 'express';
 import { PaymentsController } from '../controllers/payments.controller';
-import { authenticateToken } from '../middleware/auth.middleware';
+import { authenticateToken, optionalAuth } from '../middleware/auth.middleware';
 import { validateBody } from '../middleware/validation.middleware';
 import { z } from 'zod';
 
@@ -23,18 +22,16 @@ const checkoutSchema = z.object({
   guestName: z.string().min(2).optional(),
 });
 
-// ✅ RUTAS CORREGIDAS - Asegurarse de que todas las funciones existan
-
-// Checkout (público - para usuarios y guests)
-router.post('/checkout', validateBody(checkoutSchema), PaymentsController.createCheckout);
+// ✅ CORRECCIÓN CRÍTICA: Usar optionalAuth para que checkout reciba el usuario
+router.post('/checkout', optionalAuth, validateBody(checkoutSchema), PaymentsController.createCheckout);
 
 // Webhook de Stripe (sin autenticación)
 router.post('/webhook', PaymentsController.handleWebhook);
 
-// Obtener estado de orden
-router.get('/order-status/:orderId', PaymentsController.getOrderStatus);
+// Obtener estado de orden (con autenticación opcional)
+router.get('/order-status/:orderId', optionalAuth, PaymentsController.getOrderStatus);
 
-// Ruta para obtener la última orden del usuario - ✅ CORREGIDA
+// Ruta para obtener la última orden del usuario
 router.get('/latest-order', authenticateToken, PaymentsController.getLatestOrder);
 
 // Ruta de prueba
