@@ -1,4 +1,3 @@
-// frontend/src/app/checkout/page.tsx - VERSIÓN FINAL FUNCIONAL
 "use client";
 
 import { useState, useEffect } from "react";
@@ -17,53 +16,50 @@ export default function CheckoutPage() {
     }
   }, [cart]);
 
+  const getSessionId = () => {
+    const guestSessionId = typeof window !== "undefined" ? localStorage.getItem("guestSessionId") : null;
+    if (guestSessionId) return guestSessionId;
+    return `session_${Date.now()}`;
+  };
+
   const handleCheckout = async () => {
     setLoading(true);
     setErrorMsg("");
-    
-    try {
-      const token = localStorage.getItem("token");
 
-      // ✅ RUTA CORREGIDA: /api/payments/checkout
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const sid = getSessionId();
+
       const res = await fetch("http://localhost:5001/api/payments/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ 
-          sessionId,
+        body: JSON.stringify({
+          sessionId: sid,
           shippingAddress: {
             fullName: "Cliente Ejemplo",
             street: "Calle Principal 123",
             city: "Ciudad de México",
-            state: "CDMX", 
+            state: "CDMX",
             postalCode: "12345",
             country: "México",
-            phone: "+525512345678"
-          }
+            phone: "+525512345678",
+          },
         }),
       });
 
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.message || "Error en el checkout");
-      }
+      if (!res.ok) throw new Error(data.message || "Error en el checkout");
 
-      console.log("✅ Checkout exitoso:", data);
-
-      // Si tenemos clientSecret, redirigir a éxito
       if (data.data && data.data.orderId) {
-        // Limpiar carrito después de checkout exitoso
         clearCart();
-        
-        // Redirigir a página de éxito con el orderId
         router.push(`/checkout/success?orderId=${data.data.orderId}`);
       } else {
         throw new Error("No se recibió orderId del servidor");
       }
-
     } catch (err: any) {
       console.error("Checkout error:", err);
       setErrorMsg(err.message || "❌ Error inesperado en el checkout");
@@ -72,58 +68,74 @@ export default function CheckoutPage() {
     }
   };
 
-  const total = cart?.items?.reduce((sum, item) => {
-    return sum + (item.product.price * item.quantity);
-  }, 0) || 0;
+  const total =
+    cart?.items?.reduce((sum, item) => sum + item.product.price * item.quantity, 0) || 0;
 
   return (
-    <div className="container mx-auto p-6 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-6">Checkout</h1>
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-start py-10 px-4">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8">
+        <h1 className="text-3xl font-bold text-center text-gray-900 mb-8">
+          Checkout
+        </h1>
 
-      {/* Resumen del Pedido */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Resumen del Pedido</h2>
-        
-        {cart?.items?.map((item) => (
-          <div key={item.id} className="flex justify-between items-center py-3 border-b">
-            <div>
-              <p className="font-medium">{item.product.name}</p>
-              <p className="text-gray-600">Cantidad: {item.quantity}</p>
+        {/* Resumen del Pedido */}
+        <div className="rounded-xl border border-gray-200 p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 border-b pb-2 text-gray-800">
+            Resumen del Pedido
+          </h2>
+          {cart?.items?.map((item) => (
+            <div
+              key={item.id}
+              className="flex justify-between items-center py-3 border-b last:border-b-0"
+            >
+              <div>
+                <p className="font-medium text-gray-900">{item.product.name}</p>
+                <p className="text-gray-600 text-sm">Cantidad: {item.quantity}</p>
+              </div>
+              <p className="font-semibold text-gray-900">
+                ${(item.product.price * item.quantity).toFixed(2)}
+              </p>
             </div>
-            <p className="font-semibold">
-              ${(item.product.price * item.quantity).toFixed(2)}
-            </p>
+          ))}
+          <div className="flex justify-between items-center pt-4 mt-4 border-t">
+            <p className="text-lg font-bold text-gray-900">Total:</p>
+            <p className="text-lg font-bold text-gray-900">${total.toFixed(2)}</p>
           </div>
-        ))}
-        
-        <div className="flex justify-between items-center pt-4 mt-4 border-t">
-          <p className="text-lg font-bold">Total:</p>
-          <p className="text-lg font-bold">${total.toFixed(2)}</p>
         </div>
-      </div>
 
-      {/* Mensaje de Error */}
-      {errorMsg && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {errorMsg}
-        </div>
-      )}
-
-      {/* Botón de Pago */}
-      <button
-        onClick={handleCheckout}
-        disabled={loading || !cart || cart.items.length === 0}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
-      >
-        {loading ? (
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-            Procesando Pago...
+        {/* Mensaje de Error */}
+        {errorMsg && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-5 py-3 rounded-lg mb-5 text-center">
+            {errorMsg}
           </div>
-        ) : (
-          `Pagar $${total.toFixed(2)}`
         )}
-      </button>
+
+        {/* Debug Info */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6 text-gray-800 text-sm">
+          <p>
+            <strong className="text-gray-900">Debug Info:</strong><br />
+            • Items en carrito: {cart?.items?.length || 0}<br />
+            • SessionId: {getSessionId()}<br />
+            • Usuario: {typeof window !== "undefined" && localStorage.getItem("token") ? "Autenticado" : "Invitado"}
+          </p>
+        </div>
+
+        {/* Botón de Pago */}
+        <button
+          onClick={handleCheckout}
+          disabled={loading || !cart || cart.items.length === 0}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+        >
+          {loading ? (
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              Procesando Pago...
+            </div>
+          ) : (
+            `Pagar $${total.toFixed(2)}`
+          )}
+        </button>
+      </div>
     </div>
   );
 }

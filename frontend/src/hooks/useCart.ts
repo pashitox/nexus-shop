@@ -13,15 +13,35 @@ export const useCart = () => {
     updateQuantity, 
     getTotal, 
     getItemCount,
-    loadCart 
+    loadCart,
+    sessionId 
   } = useCartStore();
   
   const { success, error } = useToast();
-  const [isMounted, setIsMounted] = useState(false); // ✅ Nuevo estado
+  const [isMounted, setIsMounted] = useState(false);
 
-  // ✅ Solo cargar en el cliente
+  // ✅ MEJORADO: Gestión robusta de sessionId
   useEffect(() => {
     setIsMounted(true);
+    
+    const ensureSessionId = () => {
+      // Verificamos si existe un sessionId en el store o en localStorage
+      const currentSessionId = useCartStore.getState().sessionId;
+      const storedSessionId = localStorage.getItem('guestSessionId');
+      
+      // Si no hay ninguno, generamos uno nuevo
+      if (!currentSessionId && !storedSessionId) {
+        const newSessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('guestSessionId', newSessionId);
+        // El persist middleware de Zustand guardará automáticamente el sessionId si está enlazado
+      }
+      // Si hay uno en localStorage pero no en el store, lo sincronizamos
+      else if (storedSessionId && !currentSessionId) {
+        useCartStore.setState({ sessionId: storedSessionId });
+      }
+    };
+    
+    ensureSessionId();
     loadCart();
   }, [loadCart]);
 
@@ -65,6 +85,8 @@ export const useCart = () => {
     updateQuantity: handleUpdateQuantity,
     getTotal: isMounted ? getTotal : () => 0,
     getItemCount: isMounted ? getItemCount : () => 0,
-    items: isMounted ? (cart?.items || []) : []
+    items: isMounted ? (cart?.items || []) : [],
+    sessionId: isMounted ? sessionId : null,
+    reloadCart: loadCart
   };
 };

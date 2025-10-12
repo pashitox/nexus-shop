@@ -12,8 +12,23 @@ export function formatPrice(price: number): string {
   }).format(price);
 }
 
+// ✅ MEJORADO: gestión persistente y reutilizable del sessionId
 export function generateSessionId(): string {
-  return `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  try {
+    // Intentar recuperar sessionId existente
+    const existingSessionId = localStorage.getItem('guestSessionId');
+    if (existingSessionId) {
+      return existingSessionId;
+    }
+
+    // Crear nuevo sessionId
+    const newSessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('guestSessionId', newSessionId);
+    return newSessionId;
+  } catch {
+    // En caso de que localStorage no esté disponible (SSR, etc.)
+    return `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
 }
 
 export function formatDate(date: string | Date): string {

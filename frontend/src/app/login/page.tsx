@@ -26,17 +26,20 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login } = useAuthStore();
+  // ✅ Importa la nueva función de login con fusión de carrito
+  const { loginWithCartMerge } = useAuthStore();
+
   const router = useRouter();
 
-  // ✅ LOGIN MANUAL
+  // ✅ MEJORA: Login con fusión de carrito
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      // ✅ Nueva función con merge del carrito de invitado
+      await loginWithCartMerge(email, password);
 
       const token = localStorage.getItem('token');
       console.log('🔍 Token después del login:', token ? `✅ (${token.length} chars)` : '❌ NO ENCONTRADO');
@@ -80,27 +83,22 @@ export default function LoginPage() {
     }
   };
 
-// ✅ GOOGLE OAUTH REAL - CON PUERTO 3000
-const handleRealGoogleLogin = () => {
-  setError('');
-  setGoogleLoading(true);
+  // ✅ LOGIN REAL CON GOOGLE OAUTH (puerto 3000)
+  const handleRealGoogleLogin = () => {
+    setError('');
+    setGoogleLoading(true);
 
-  // ✅ REDIRECT_URI CON PUERTO 3000
-  const redirectUri = 'http://localhost:3000/auth/callback';
-  
-  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-    `client_id=479463812136-c44nrt1h74i6t8re4tb6ut8dgia4ud0g.apps.googleusercontent.com&` +
-    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-    `response_type=code&` +
-    `scope=openid%20email%20profile&` +
-    `access_type=online&` +
-    `prompt=consent`;
+    const redirectUri = 'http://localhost:3000/auth/callback';
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=479463812136-c44nrt1h74i6t8re4tb6ut8dgia4ud0g.apps.googleusercontent.com&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&scope=openid%20email%20profile&access_type=online&prompt=consent`;
 
-  console.log('🔗 Redirigiendo a Google OAuth REAL...');
-  console.log('📋 Redirect URI exacto:', redirectUri);
-  window.location.href = googleAuthUrl;
-  setGoogleLoading(false);
-};
+    console.log('🔗 Redirigiendo a Google OAuth REAL...');
+    console.log('📋 Redirect URI exacto:', redirectUri);
+    window.location.href = googleAuthUrl;
+    setGoogleLoading(false);
+  };
 
   // ✅ CREAR USUARIO TEST
   const handleCreateTestUser = async () => {

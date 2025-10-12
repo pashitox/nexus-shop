@@ -18,16 +18,19 @@ interface AuthState {
   logout: () => void;
   setUser: (user: User | null) => void;
   setToken: (token: string) => void; // ✅ AGREGADO
+  // ✅ NUEVO: Login con fusión automática de carrito
+  loginWithCartMerge: (email: string, password: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
       isLoading: false,
       token: null, // ✅ INICIALIZADO
 
+      // 🔹 LOGIN NORMAL
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
@@ -45,6 +48,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      // 🔹 REGISTRO
       register: async (email: string, password: string, name: string) => {
         set({ isLoading: true });
         try {
@@ -61,29 +65,71 @@ export const useAuthStore = create<AuthState>()(
           throw error;
         }
       },
-// En cada función de login, asegúrate de guardar el token:
-   googleLogin: async (googleToken: string) => {
-    set({ isLoading: true });
-     try {
-     const response = await apiClient.googleLogin(googleToken);
-    
-    // ✅ GUARDAR TOKEN EN AMBOS LUGARES (por compatibilidad)
-     const token = response.data.token;
-     localStorage.setItem('token', token);
-    
-     set({
-      user: response.data.user,
-      isAuthenticated: true,
-      isLoading: false,
-      token: token, // ✅ Guardar en el store
-    });
-    
-   } catch (error) {
-    set({ isLoading: false });
-    throw error;
-   }
-   },
 
+      // 🔹 LOGIN CON GOOGLE + FUSIÓN DE CARRITO
+      googleLogin: async (googleToken: string) => {
+        set({ isLoading: true });
+        try {
+          const response = await apiClient.googleLogin(googleToken);
+          const { user, token } = response.data;
+
+          // ✅ Guardar token
+          localStorage.setItem('token', token);
+
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            token,
+          });
+
+          // ✅ FUSIONAR CARRITO DESPUÉS DEL LOGIN GOOGLE
+          setTimeout(async () => {
+            try {
+              const cartStore = useCartStore.getState();
+              await cartStore.mergeGuestCartWithUser(user.id);
+            } catch (error) {
+              console.error('Error en fusión de carrito Google:', error);
+            }
+          }, 1000);
+        } catch (error) {
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+
+      // 🔹 LOGIN CON FUSIÓN AUTOMÁTICA DE CARRITO
+      loginWithCartMerge: async (email: string, password: string) => {
+        set({ isLoading: true });
+        try {
+          const response = await apiClient.login(email, password);
+          const { user, token } = response.data;
+
+          // Guardar token y usuario
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            token,
+          });
+          localStorage.setItem('token', token);
+
+          // ✅ FUSIONAR CARRITO DESPUÉS DEL LOGIN
+          setTimeout(async () => {
+            try {
+              const cartStore = useCartStore.getState();
+              await cartStore.mergeGuestCartWithUser(user.id);
+            } catch (error) {
+              console.error('Error en fusión de carrito:', error);
+            }
+          }, 1000);
+        } catch (error) {
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+
+      // 🔹 LOGOUT
       logout: () => {
         set({
           user: null,
@@ -117,7 +163,7 @@ export const useAuthStore = create<AuthState>()(
 );
 
 /* ==========================
-   CART STORE (sin cambios)
+   CART STORE
 ========================== */
 interface CartState {
   items: CartItem[];
@@ -133,6 +179,8 @@ interface CartState {
   getTotal: () => number;
   getItemCount: () => number;
   mergeCarts: (userCart: Cart, guestCart: Cart) => Promise<void>;
+  // ✅ NUEVO: Fusión automática al login
+  mergeGuestCartWithUser: (userId: string) => Promise<void>;
 }
 
 export const useCartStore = create<CartState>()(
@@ -254,6 +302,40 @@ export const useCartStore = create<CartState>()(
         } catch (error) {
           console.error('Error merging carts:', error);
           throw error;
+        }
+      },
+
+      // ✅ NUEVA FUNCIÓN: Fusión automática entre carrito invitado y usuario
+      mergeGuestCartWithUser: async (userId: string) => {
+        try {
+          set({ isLoading: true });
+
+          const sessionId = get().sessionId;
+          if (!sessionId) return;
+
+          console.log('🔄 Fusionando carrito guest con usuario:', { sessionId, userId });
+
+          const response = await fetch('http://localhost:5001/api/cart/merge', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify({ sessionId }),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            console.log('✅ Carrito fusionado exitosamente');
+            await get().loadCart();
+          } else {
+            console.warn('⚠️ No se pudo fusionar carrito:', result.message);
+          }
+        } catch (error) {
+          console.error('❌ Error fusionando carritos:', error);
+        } finally {
+          set({ isLoading: false });
         }
       },
     }),
