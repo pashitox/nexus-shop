@@ -37,4 +37,6 @@ router.get('/latest-order', authenticateToken, PaymentsController.getLatestOrder
 // Ruta de prueba
 router.get('/test', PaymentsController.testPaymentSystem);
 
+router.post("/confirm-success", optionalAuth, PaymentsController.confirmPaymentSuccess);
+
 export { router as paymentsRoutes };

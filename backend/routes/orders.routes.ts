@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { OrdersController } from '../controllers/orders.controller';
-import { authenticateToken, optionalAuth } from '../middleware/auth.middleware';
+import { OrdersController } from '../controllers/orders.controller.js';
+import { authenticateToken, optionalAuth } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -14,5 +14,6 @@ router.get('/guest/:email', OrdersController.getGuestOrders);
 router.post('/', optionalAuth, OrdersController.createOrder);
 router.get('/', authenticateToken, OrdersController.getOrders);
 router.get('/:id', optionalAuth, OrdersController.getOrderById);
+router.put('/:id/status', authenticateToken, OrdersController.updateOrderStatus);
 
 export { router as ordersRoutes };

@@ -1,4 +1,3 @@
-// frontend/src/app/checkout/success/page.tsx - VERSIÓN CORREGIDA
 "use client";
 
 import { useEffect, useState } from "react";
@@ -29,11 +28,43 @@ export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
 
-  // ✅ SOLUCIÓN: Cargar token solo en el cliente
+  // ✅ Cargar token solo en cliente
   useEffect(() => {
     setToken(localStorage.getItem("token"));
   }, []);
 
+  // ✅ Confirmar el pago exitoso y enviar email
+  useEffect(() => {
+    const confirmPayment = async () => {
+      try {
+        if (!orderId) return;
+        console.log("🎉 Confirmando pago exitoso para orden:", orderId);
+
+        const response = await fetch("http://localhost:5001/api/payments/confirm-success", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ orderId }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log("✅ Pago confirmado y email enviado:", data);
+        } else {
+          console.error("❌ Error confirmando pago:", data);
+        }
+      } catch (error) {
+        console.error("Error confirmando pago:", error);
+      }
+    };
+
+    confirmPayment();
+  }, [orderId]);
+
+  // ✅ Obtener detalles de la orden
   useEffect(() => {
     if (!token) return;
 
@@ -79,7 +110,6 @@ export default function CheckoutSuccessPage() {
         if (!res.ok) throw new Error(data.message || "Error al obtener las órdenes");
 
         if (data.data && data.data.length > 0) {
-          // Tomar la orden más reciente
           setOrder(data.data[0]);
         } else {
           setErrorMsg("No se encontraron órdenes recientes");
@@ -117,19 +147,18 @@ export default function CheckoutSuccessPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            ¡Pago Exitoso!
-          </h1>
-          <p className="text-gray-600 text-sm">
-            Tu pedido ha sido procesado correctamente.
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">¡Pago Exitoso!</h1>
+          <p className="text-gray-600 text-sm">Tu pedido ha sido procesado correctamente.</p>
         </div>
 
         {/* Mensaje de Error */}
         {errorMsg && !order && (
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-5 py-3 rounded-lg mb-6 text-center">
             <p>{errorMsg}</p>
-            <Link href="/orders" className="text-blue-600 hover:underline mt-2 inline-block font-medium">
+            <Link
+              href="/orders"
+              className="text-blue-600 hover:underline mt-2 inline-block font-medium"
+            >
               Ver mis órdenes
             </Link>
           </div>
@@ -163,12 +192,13 @@ export default function CheckoutSuccessPage() {
               </div>
             </div>
 
-            {/* Items */}
             <h3 className="font-semibold text-gray-900 mb-3 border-b pb-1">Productos</h3>
             <div className="space-y-2 text-gray-800">
               {order.items.map((item) => (
                 <div key={item.id} className="flex justify-between text-sm">
-                  <span>{item.product.name} × {item.quantity}</span>
+                  <span>
+                    {item.product.name} × {item.quantity}
+                  </span>
                   <span>${(item.product.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
@@ -193,7 +223,6 @@ export default function CheckoutSuccessPage() {
           </Link>
         </div>
 
-        {/* Mensaje Final */}
         <div className="text-center mt-8 pt-6 border-t border-gray-200">
           <p className="text-gray-600 text-sm">
             Gracias por tu compra. Te hemos enviado un correo de confirmación.
