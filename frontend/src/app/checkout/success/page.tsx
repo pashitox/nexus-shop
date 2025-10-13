@@ -1,4 +1,4 @@
-// frontend/src/app/checkout/success/page.tsx
+// frontend/src/app/checkout/success/page.tsx - VERSIÓN CORREGIDA
 "use client";
 
 import { useEffect, useState } from "react";
@@ -24,27 +24,34 @@ export default function CheckoutSuccessPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+  const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
 
+  // ✅ SOLUCIÓN: Cargar token solo en el cliente
   useEffect(() => {
+    setToken(localStorage.getItem("token"));
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
     const fetchOrder = async () => {
       try {
         if (orderId) {
-          const token = localStorage.getItem("token");
-          const res = await fetch(`http://localhost:5001/api/payments/order-status/${orderId}`, {
+          const res = await fetch(`http://localhost:5001/api/orders/${orderId}`, {
             headers: {
               "Content-Type": "application/json",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              Authorization: `Bearer ${token}`,
             },
           });
 
           const data = await res.json();
           if (!res.ok) throw new Error(data.message || "Error al obtener la orden");
 
-          if (data.data?.order) {
-            setOrder(data.data.order);
+          if (data.data) {
+            setOrder(data.data);
           } else {
             await fetchLatestOrder();
           }
@@ -61,13 +68,7 @@ export default function CheckoutSuccessPage() {
 
     const fetchLatestOrder = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setErrorMsg("Necesitas iniciar sesión para ver los detalles de la orden");
-          return;
-        }
-
-        const res = await fetch("http://localhost:5001/api/payments/latest-order", {
+        const res = await fetch("http://localhost:5001/api/orders", {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -75,21 +76,22 @@ export default function CheckoutSuccessPage() {
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Error al obtener la última orden");
+        if (!res.ok) throw new Error(data.message || "Error al obtener las órdenes");
 
-        if (data.data?.order) {
-          setOrder(data.data.order);
+        if (data.data && data.data.length > 0) {
+          // Tomar la orden más reciente
+          setOrder(data.data[0]);
         } else {
           setErrorMsg("No se encontraron órdenes recientes");
         }
       } catch (err: any) {
-        console.error("Error obteniendo última orden:", err);
-        setErrorMsg(err.message || "❌ Error al cargar la última orden.");
+        console.error("Error obteniendo órdenes:", err);
+        setErrorMsg(err.message || "❌ Error al cargar las órdenes.");
       }
     };
 
     fetchOrder();
-  }, [orderId]);
+  }, [orderId, token]);
 
   if (loading) {
     return (
