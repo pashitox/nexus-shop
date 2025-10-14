@@ -1,51 +1,99 @@
-// frontend/src/app/checkout/page.tsx - VERSIÓN CORREGIDA
+// frontend/src/app/checkout/page.tsx - VERSIÓN FINAL CORREGIDA
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCartStore } from "@/lib/store";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
-import { CreditCard, Lock, Shield } from "lucide-react";
+import { CreditCard, Lock, Shield, ShoppingCart, LogIn } from "lucide-react";
 
 export default function CheckoutPage() {
-  const { cart, clearCart } = useCartStore();
+  const { cart } = useCartStore();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string>("");
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // ✅ SOLUCIÓN: Cargar localStorage solo en el cliente
+  // ✅ VERIFICAR SI EL USUARIO ESTÁ LOGUEADO
   useEffect(() => {
-    setToken(localStorage.getItem("token"));
-    setSessionId(
-      localStorage.getItem("guestSessionId") ||
-        `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    );
-  }, []);
+    const userToken = localStorage.getItem("token");
+    setToken(userToken);
+    
+    // ✅ OBTENER SESSION ID DEL LOCALSTORAGE
+    const guestSession = localStorage.getItem("guestSessionId") || "guest_default_session";
+    setSessionId(guestSession);
 
-  // ✅ Validación de carrito vacío
-  useEffect(() => {
-    if (!cart || cart.items.length === 0) {
-      setErrorMsg("El carrito está vacío");
+    // ✅ REDIRIGIR SI NO ESTÁ LOGUEADO - USANDO RUTA CORRECTA /login
+    if (!userToken) {
+      console.log("🔐 Usuario no logueado - Redirigiendo a /login");
+      const currentPath = window.location.pathname;
+      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
     }
-  }, [cart]);
+  }, [router]);
 
-  // ✅ Función de checkout con Stripe
+  // ✅ SI NO HAY TOKEN, MOSTRAR PANTALLA DE LOGIN
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center py-16">
+            <LogIn className="w-24 h-24 text-blue-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Inicia Sesión para Continuar
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Necesitas tener una cuenta para completar tu compra.
+            </p>
+            <div className="space-y-3 max-w-sm mx-auto">
+              <Button 
+                onClick={() => router.push("/login?redirect=/checkout")}
+                className="w-full py-3"
+              >
+                Iniciar Sesión
+              </Button>
+              <Button 
+                onClick={() => router.push("/register?redirect=/checkout")}
+                variant="outline"
+                className="w-full py-3"
+              >
+                Crear Cuenta
+              </Button>
+              <Button 
+                onClick={() => router.push("/products")}
+                variant="ghost"
+                className="w-full py-2"
+              >
+                Continuar Comprando
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Función de checkout
   const handleCheckout = async () => {
     setLoading(true);
     setErrorMsg("");
 
     try {
-      // Guardar sessionId si es nuevo
-      if (!localStorage.getItem("guestSessionId")) {
-        localStorage.setItem("guestSessionId", sessionId);
+      if (!cart || !cart.items || cart.items.length === 0) {
+        throw new Error("El carrito está vacío");
       }
 
-      const checkoutData = {
+      console.log("🛒 Enviando checkout como usuario autenticado:", {
         sessionId,
+        itemsCount: cart.items.length,
+        usuario: "Autenticado"
+      });
+
+      const checkoutData = {
+        sessionId: sessionId,
         shippingAddress: {
           fullName: "Cliente Ejemplo",
           street: "Calle Principal 123",
@@ -61,17 +109,20 @@ export default function CheckoutPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(checkoutData),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Error en el checkout");
+      
+      if (!res.ok) {
+        console.error("❌ Error del backend:", data);
+        throw new Error(data.message || "Error en el checkout");
+      }
 
       console.log("✅ Checkout exitoso:", data);
 
-      // ✅ Redirigir al formulario de pago (Stripe)
       if (data.data && data.data.clientSecret && data.data.orderId) {
         const { clientSecret, orderId, amount } = data.data;
         router.push(
@@ -89,15 +140,36 @@ export default function CheckoutPage() {
   };
 
   // ✅ Cálculos del pedido
-  const subtotal =
-    cart?.items?.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
-      0
-    ) || 0;
+  const subtotal = cart?.items?.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  ) || 0;
   const tax = subtotal * 0.16;
   const total = subtotal + tax;
 
-  // ✅ Render principal
+  // ✅ Si el carrito está vacío
+  if (!cart || !cart.items || cart.items.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center py-16">
+            <ShoppingCart className="w-24 h-24 text-gray-300 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Carrito Vacío
+            </h1>
+            <p className="text-gray-600 mb-8">
+              Agrega productos al carrito antes de proceder al checkout.
+            </p>
+            <Button onClick={() => router.push("/products")}>
+              Continuar Comprando
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Render principal (SOLO PARA USUARIOS LOGUEADOS)
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
@@ -114,7 +186,7 @@ export default function CheckoutPage() {
               </h2>
             </CardHeader>
             <CardContent className="p-6">
-              {cart?.items?.map((item) => (
+              {cart.items.map((item) => (
                 <div
                   key={item.id}
                   className="flex justify-between items-center py-3 border-b"
@@ -165,8 +237,7 @@ export default function CheckoutPage() {
                   <span className="font-medium">Pago Seguro</span>
                 </div>
                 <p className="text-blue-700 text-sm">
-                  Serás redirigido a Stripe para completar tu compra de forma
-                  segura.
+                  Serás redirigido a Stripe para completar tu compra de forma segura.
                 </p>
               </div>
 
@@ -176,17 +247,24 @@ export default function CheckoutPage() {
                   <span className="font-medium">Protección Total</span>
                 </div>
                 <p className="text-green-700 text-sm">
-                  Tu información de pago está encriptada y nunca toca nuestros
-                  servidores.
+                  Tu información de pago está encriptada y nunca toca nuestros servidores.
                 </p>
               </div>
 
-              {/* 🔍 Debug Info */}
+              {/* 🔍 Información del Usuario */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="font-semibold text-green-800 mb-1">✅ Usuario Verificado</p>
+                <p className="text-green-700 text-sm">
+                  Has iniciado sesión correctamente. Tu pedido se asociará a tu cuenta.
+                </p>
+              </div>
+
+              {/* 🔍 Información del Pedido */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700">
-                <p className="font-semibold mb-1">Debug Info:</p>
-                <p>• Items: {cart?.items?.length || 0}</p>
-                <p>• SessionId: {sessionId}</p>
-                <p>• Usuario: {token ? "Autenticado" : "Invitado"}</p>
+                <p className="font-semibold mb-1">Información del Pedido:</p>
+                <p>• Items: {cart.items.length}</p>
+                <p>• Usuario: Autenticado ✅</p>
+                <p>• Total: {formatPrice(total)}</p>
               </div>
 
               {/* ❌ Mensaje de Error */}
@@ -199,7 +277,7 @@ export default function CheckoutPage() {
               {/* 🧭 Botón de Pago */}
               <Button
                 onClick={handleCheckout}
-                disabled={loading || !cart || cart.items.length === 0}
+                disabled={loading}
                 className="w-full py-3 text-lg font-semibold mt-3"
               >
                 {loading ? (
