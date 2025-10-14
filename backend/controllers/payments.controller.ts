@@ -1,4 +1,4 @@
-/// controllers/payments.controller.ts - VERSIÓN COMPLETA FINAL CON EMAIL EN PAGO EXITOSO (INCLUYE CONFIRM MANUAL Y WEBHOOK)
+// /home/pashitox/Documentos/nexus-shop/backend/controllers/payments.controller.ts
 import { Request, Response } from 'express';
 import { stripe } from '../utils/stripe.js';
 import { PrismaClient } from '@prisma/client';
@@ -30,6 +30,19 @@ export class PaymentsController {
         sessionId,
         guestEmail
       });
+
+      // ✅ LOG DETALLADO DE LA DIRECCIÓN
+      console.log('📍 Dirección de envío recibida:', shippingAddress ? 'PRESENTE' : 'AUSENTE');
+      if (shippingAddress) {
+        console.log('   Detalles dirección:');
+        console.log('     fullName:', shippingAddress.fullName);
+        console.log('     street:', shippingAddress.street);
+        console.log('     city:', shippingAddress.city);
+        console.log('     state:', shippingAddress.state);
+        console.log('     postalCode:', shippingAddress.postalCode);
+        console.log('     country:', shippingAddress.country);
+        console.log('     phone:', shippingAddress.phone || 'No proporcionado');
+      }
 
       if (!sessionId) {
         return res.status(400).json({
@@ -77,13 +90,13 @@ export class PaymentsController {
 
       console.log(`💰 Total calculado: $${amount / 100}`);
 
-      // Crear orden
+      // ✅ GUARDAR LA DIRECCIÓN EN LA ORDEN
       const order = await prisma.order.create({
         data: {
           userId: user?.id || null,
           guestEmail: guestEmail || user?.email || null,
           guestName: guestName || user?.name || null,
-          shippingAddress: shippingAddress || {},
+          shippingAddress: shippingAddress || null, // ✅ GUARDAR LA DIRECCIÓN
           total: amount / 100,
           status: OrderStatus.PENDING,
           items: {
@@ -98,6 +111,7 @@ export class PaymentsController {
       });
 
       console.log(`📝 Orden creada: #${order.id}`);
+      console.log('📍 Dirección guardada en la orden:', order.shippingAddress ? '✅' : '❌ NO GUARDADA');
 
       // Reservar stock
       for (const item of cart.items) {
@@ -163,7 +177,7 @@ export class PaymentsController {
     }
   }
 
-  // ✅ CONFIRMAR PAGO EXITOSO Y ENVIAR EMAIL
+  // ✅ CONFIRMAR PAGO EXITOSO Y ENVIAR EMAIL - VERSIÓN CORREGIDA
   static async confirmPaymentSuccess(req: AuthenticatedRequest, res: Response) {
     try {
       const { orderId } = req.body;
@@ -206,6 +220,7 @@ export class PaymentsController {
       });
 
       console.log(`✅ Orden #${orderId} marcada como PAID`);
+      console.log('📍 Dirección en la orden:', order.shippingAddress ? '✅ PRESENTE' : '❌ AUSENTE');
 
       // Envío de email
       const email = user?.email || order.guestEmail;
@@ -214,6 +229,8 @@ export class PaymentsController {
       if (email) {
         try {
           console.log('🚀 Enviando email de confirmación a:', email);
+          
+          // ✅ CORREGIR: PASAR LA DIRECCIÓN DE ENVÍO AL EMAIL
           const emailResult = await sendOrderConfirmation(
             email,
             orderId,
@@ -223,22 +240,32 @@ export class PaymentsController {
               name: item.product.name,
               quantity: item.quantity,
               price: item.price
-            }))
+            })),
+            order.shippingAddress // ✅ ¡PASAR LA DIRECCIÓN DE ENVÍO!
           );
 
-          console.log('✅ EMAIL ENVIADO EXITOSAMENTE');
+          console.log('✅ EMAIL ENVIADO EXITOSAMENTE CON DIRECCIÓN');
 
           res.json({
             success: true,
             message: 'Pago confirmado y email enviado exitosamente',
-            data: { order: updatedOrder, emailSent: true, emailResult }
+            data: { 
+              order: updatedOrder, 
+              emailSent: true, 
+              emailResult,
+              shippingAddressIncluded: !!order.shippingAddress // ✅ CONFIRMAR QUE SE INCLUYÓ
+            }
           });
         } catch (emailError: any) {
           console.error('❌ Error enviando email:', emailError);
           res.json({
             success: true,
             message: 'Pago confirmado pero error enviando email',
-            data: { order: updatedOrder, emailSent: false, emailError: emailError.message }
+            data: { 
+              order: updatedOrder, 
+              emailSent: false, 
+              emailError: emailError.message 
+            }
           });
         }
       } else {
@@ -258,7 +285,7 @@ export class PaymentsController {
     }
   }
 
-  // 📡 WEBHOOK DE STRIPE (operativo)
+  // 📡 WEBHOOK DE STRIPE (operativo) - VERSIÓN CORREGIDA
   static async handleWebhook(req: Request, res: Response) {
     const sig = req.headers['stripe-signature'] as string;
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -294,13 +321,18 @@ export class PaymentsController {
     }
   }
 
-  // ✅ MANEJAR PAGO EXITOSO AUTOMÁTICO (desde webhook)
+  // ✅ MANEJAR PAGO EXITOSO AUTOMÁTICO (desde webhook) - VERSIÓN CORREGIDA
   private static async handlePaymentSuccess(paymentIntent: any) {
+    console.log('🔄 Procesando pago exitoso desde webhook...');
+    
     const order = await prisma.order.update({
       where: { stripePaymentIntentId: paymentIntent.id },
       data: { status: OrderStatus.PAID, updatedAt: new Date() },
       include: { items: { include: { product: true } } }
     });
+
+    console.log(`✅ Orden #${order.id} actualizada a PAID desde webhook`);
+    console.log('📍 Dirección en la orden:', order.shippingAddress ? '✅ PRESENTE' : '❌ AUSENTE');
 
     const email = order.userId 
       ? (await prisma.user.findUnique({ where: { id: order.userId } }))?.email
@@ -311,18 +343,23 @@ export class PaymentsController {
       : order.guestName;
 
     if (email) {
-      await sendOrderConfirmation(
-        email,
-        order.id,
-        order.total,
-        name || 'Cliente',
-        order.items.map(i => ({
-          name: i.product.name,
-          quantity: i.quantity,
-          price: i.price
-        }))
-      );
-      console.log('✅ Email enviado por webhook');
+      try {
+        await sendOrderConfirmation(
+          email,
+          order.id,
+          order.total,
+          name || 'Cliente',
+          order.items.map(i => ({
+            name: i.product.name,
+            quantity: i.quantity,
+            price: i.price
+          })),
+          order.shippingAddress // ✅ ¡PASAR LA DIRECCIÓN AL EMAIL!
+        );
+        console.log('✅ Email enviado por webhook CON DIRECCIÓN');
+      } catch (emailError) {
+        console.error('❌ Error enviando email desde webhook:', emailError);
+      }
     }
   }
 

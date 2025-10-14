@@ -1,4 +1,4 @@
-// /home/pashitox/Documentos/nexus-shop/backend/controllers/orders.controller.ts
+// /home/pashitox/Documentos/nexus-shop/backend/controllers/orderController.ts
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { createPaymentIntent } from '../utils/stripe.js';
@@ -40,6 +40,17 @@ export class OrdersController {
       console.log('   guestEmail:', guestEmail);
       console.log('   guestName:', guestName);
       console.log('   sessionId:', sessionId);
+      console.log('   shippingAddress:', shippingAddress ? 'PRESENTE' : 'AUSENTE');
+      if (shippingAddress) {
+        console.log('   Detalles dirección:');
+        console.log('     fullName:', shippingAddress.fullName);
+        console.log('     street:', shippingAddress.street);
+        console.log('     city:', shippingAddress.city);
+        console.log('     state:', shippingAddress.state);
+        console.log('     postalCode:', shippingAddress.postalCode);
+        console.log('     country:', shippingAddress.country);
+        console.log('     phone:', shippingAddress.phone || 'No proporcionado');
+      }
       console.log('================================================================');
 
       // ====================== LÓGICA DE CREACIÓN DE ORDEN ======================
@@ -66,12 +77,13 @@ export class OrdersController {
       const total = cart.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
       console.log('💰 Total calculado:', total);
 
+      // ✅ CREAR LA ORDEN CON LA DIRECCIÓN COMPLETA
       const order = await prisma.order.create({
         data: {
           userId: userId || null,
           guestEmail: guestEmail || userEmail,
           guestName: guestName || userName,
-          shippingAddress,
+          shippingAddress: shippingAddress || null, // ✅ GUARDAR LA DIRECCIÓN
           total,
           stripePaymentIntentId: paymentIntentId,
           status: OrderStatus.PENDING,
@@ -93,6 +105,7 @@ export class OrdersController {
       });
 
       console.log('📦 Orden creada con éxito en la base de datos:', order.id);
+      console.log('📍 Dirección guardada en la orden:', order.shippingAddress ? '✅' : '❌ NO GUARDADA');
 
       // 🧹 Limpiar carrito
       await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
@@ -107,6 +120,7 @@ export class OrdersController {
       console.log('   Nombre:', name);
       console.log('   Total:', total);
       console.log('   Orden ID:', order.id);
+      console.log('   Shipping Address disponible:', !!shippingAddress);
 
       if (email) {
         console.log('🚀 INICIANDO ENVÍO DE EMAIL...');
@@ -120,7 +134,8 @@ export class OrdersController {
               name: item.product.name,
               quantity: item.quantity,
               price: item.product.price
-            }))
+            })),
+            shippingAddress // ✅ ¡PASANDO LA DIRECCIÓN DE ENVÍO!
           );
           console.log('✅ Email de confirmación enviado correctamente.');
           console.log('📨 Resultado del email:', emailResult);
@@ -155,6 +170,10 @@ export class OrdersController {
       const { id } = req.params;
       const { status, trackingNumber } = req.body;
 
+      console.log('🔄 Actualizando estado de orden:', id);
+      console.log('   Nuevo estado:', status);
+      console.log('   Tracking:', trackingNumber || 'N/A');
+
       const order = await prisma.order.update({
         where: { id },
         data: { 
@@ -171,8 +190,7 @@ export class OrdersController {
       });
 
       console.log('📦 Estado de orden actualizado:', order.id);
-      console.log('   Nuevo estado:', status);
-      console.log('   Tracking:', trackingNumber || 'N/A');
+      console.log('📍 Dirección en la orden:', order.shippingAddress ? '✅ PRESENTE' : '❌ AUSENTE');
 
       const email = order.userId 
         ? (await prisma.user.findUnique({ where: { id: order.userId } }))?.email
@@ -181,7 +199,15 @@ export class OrdersController {
       if (email) {
         console.log('🚀 Enviando email de actualización de estado a:', email);
         try {
-          const emailResult = await sendOrderStatusUpdate(email, order.id, status, trackingNumber);
+          // ✅ CORREGIR: Pasar los parámetros en el orden correcto
+          const emailResult = await sendOrderStatusUpdate(
+            email, 
+            order.id, 
+            status, 
+            order.guestName || 'Cliente',
+            trackingNumber,
+            order.shippingAddress // ✅ PASANDO LA DIRECCIÓN
+          );
           console.log('✅ Email de actualización enviado con éxito.');
           console.log('📨 Resultado del email:', emailResult);
         } catch (emailError) {
