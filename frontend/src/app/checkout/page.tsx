@@ -1,4 +1,3 @@
-// frontend/src/app/checkout/page.tsx - VERSIÓN CORREGIDA
 "use client";
 
 import { useState, useEffect } from "react";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
 import { CreditCard, Lock, Shield, ShoppingCart, LogIn, MapPin, Plus, Loader } from "lucide-react";
 
-// ✅ Interfaz para dirección
+// Interfaz para dirección
 interface Address {
   id: string;
   userId: string;
@@ -24,7 +23,7 @@ interface Address {
   createdAt: string;
 }
 
-// ✅ Función para obtener el email del token
+// Función para obtener el email del token
 const getUserEmailFromToken = (): string => {
   try {
     const token = localStorage.getItem('token');
@@ -33,7 +32,7 @@ const getUserEmailFromToken = (): string => {
       return payload.email || "";
     }
   } catch (error) {
-    console.error("Error obteniendo email del token:", error);
+    // console.error("Error obteniendo email del token:", error);
   }
   return "";
 };
@@ -48,38 +47,36 @@ export default function CheckoutPage() {
   const [userAddresses, setUserAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
-  const [addressLoading, setAddressLoading] = useState(true); // ✅ Iniciar como true
+  const [addressLoading, setAddressLoading] = useState(true);
   const router = useRouter();
 
-  // ✅ VERIFICAR SI EL USUARIO ESTÁ LOGUEADO Y CARGAR DIRECCIONES
+  // Verificar si el usuario está logueado y cargar direcciones
   useEffect(() => {
     const userToken = localStorage.getItem("token");
     setToken(userToken);
     
-    // ✅ OBTENER EMAIL DEL USUARIO DEL TOKEN
+    // Obtener email del usuario del token
     if (userToken) {
       const email = getUserEmailFromToken();
       setUserEmail(email);
-      console.log("📧 Email del usuario:", email);
     }
     
     const guestSession = localStorage.getItem("guestSessionId") || "guest_default_session";
     setSessionId(guestSession);
 
     if (!userToken) {
-      console.log("🔐 Usuario no logueado - Redirigiendo a /login");
       router.push(`/login?redirect=${encodeURIComponent("/checkout")}`);
     }
   }, [router]);
 
-  // ✅ CARGAR DIRECCIONES DEL USUARIO - EFFECT SEPARADO
+  // Cargar direcciones del usuario - effect separado
   useEffect(() => {
     if (!token) return;
     
     loadUserAddresses();
-  }, [token]); // ✅ Solo ejecutar cuando token cambie
+  }, [token]);
 
-  // ✅ CARGAR DIRECCIONES DEL USUARIO
+  // Cargar direcciones del usuario
   const loadUserAddresses = async () => {
     if (!token) {
       setAddressLoading(false);
@@ -88,7 +85,6 @@ export default function CheckoutPage() {
     
     setAddressLoading(true);
     try {
-      console.log("📍 Cargando direcciones para usuario...");
       const res = await fetch("http://localhost:5001/api/addresses", {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -96,46 +92,35 @@ export default function CheckoutPage() {
         },
       });
 
-      console.log("📍 Respuesta del servidor:", res.status, res.statusText);
-
       if (res.ok) {
         const data = await res.json();
-        console.log("📍 Direcciones cargadas:", data);
         
-        // ✅ VERIFICAR ESTRUCTURA DE LA RESPUESTA
+        // Verificar estructura de la respuesta
         const addresses = data.data || data.addresses || data || [];
         setUserAddresses(addresses);
-        
-        console.log("📍 Direcciones procesadas:", addresses);
 
-        // ✅ SELECCIONAR DIRECCIÓN POR DEFECTO O LA PRIMERA
+        // Seleccionar dirección por defecto o la primera
         if (addresses.length > 0) {
           const defaultAddress = addresses.find((addr: Address) => addr.isDefault);
           if (defaultAddress) {
             setSelectedAddress(defaultAddress);
-            console.log("📍 Dirección predeterminada seleccionada:", defaultAddress);
           } else {
             setSelectedAddress(addresses[0]);
-            console.log("📍 Primera dirección seleccionada:", addresses[0]);
           }
         } else {
-          console.log("📍 No hay direcciones disponibles");
           setSelectedAddress(null);
         }
       } else {
-        const errorText = await res.text();
-        console.error("❌ Error cargando direcciones:", res.status, errorText);
         setUserAddresses([]);
       }
     } catch (error) {
-      console.error("❌ Error cargando direcciones:", error);
       setUserAddresses([]);
     } finally {
       setAddressLoading(false);
     }
   };
 
-  // ✅ SI NO HAY TOKEN, MOSTRAR PANTALLA DE LOGIN
+  // Si no hay token, mostrar pantalla de login
   if (!token) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -176,7 +161,7 @@ export default function CheckoutPage() {
     );
   }
 
-  // ✅ SI ESTÁ CARGANDO, MOSTRAR LOADING
+  // Si está cargando, mostrar loading
   if (addressLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -195,7 +180,7 @@ export default function CheckoutPage() {
     );
   }
 
-  // ✅ SI NO HAY DIRECCIONES, MOSTRAR FORMULARIO
+  // Si no hay direcciones, mostrar formulario
   if (userAddresses.length === 0 && !showAddressForm) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -241,7 +226,7 @@ export default function CheckoutPage() {
     );
   }
 
-  // ✅ FORMULARIO DE DIRECCIÓN
+  // Formulario de dirección
   if (showAddressForm) {
     return (
       <AddressForm 
@@ -249,7 +234,7 @@ export default function CheckoutPage() {
           setUserAddresses([...userAddresses, address]);
           setSelectedAddress(address);
           setShowAddressForm(false);
-          // ✅ RECARGAR DIRECCIONES DESPUÉS DE GUARDAR
+          // Recargar direcciones después de guardar
           setTimeout(() => loadUserAddresses(), 500);
         }}
         onCancel={() => setShowAddressForm(false)}
@@ -258,7 +243,7 @@ export default function CheckoutPage() {
     );
   }
 
-  // ✅ Función de checkout
+  // Función de checkout
   const handleCheckout = async () => {
     setLoading(true);
     setErrorMsg("");
@@ -272,10 +257,7 @@ export default function CheckoutPage() {
         throw new Error("Por favor selecciona una dirección de envío");
       }
 
-      console.log("🛒 Enviando checkout con dirección:", selectedAddress);
-      console.log("📧 Email del usuario:", userEmail);
-
-      // ✅ FORMATO EXACTO QUE ESPERA EL BACKEND - CON EMAIL DEL USUARIO
+      // Formato exacto que espera el backend - con email del usuario
       const checkoutData = {
         sessionId: sessionId,
         shippingAddress: {
@@ -290,8 +272,6 @@ export default function CheckoutPage() {
         guestEmail: userEmail
       };
 
-      console.log("📦 Datos enviados al checkout:", checkoutData);
-
       const res = await fetch("http://localhost:5001/api/payments/checkout", {
         method: "POST",
         headers: {
@@ -304,8 +284,6 @@ export default function CheckoutPage() {
       const data = await res.json();
       
       if (!res.ok) {
-        console.error("❌ Error completo del backend:", data);
-        
         if (data.errors && data.errors.length > 0) {
           const errorDetails = data.errors.map((err: any) => 
             `${err.path}: ${err.message}`
@@ -316,8 +294,6 @@ export default function CheckoutPage() {
         throw new Error(data.message || `Error en el checkout: ${res.status}`);
       }
 
-      console.log("✅ Checkout exitoso:", data);
-
       if (data.data && data.data.clientSecret && data.data.orderId) {
         const { clientSecret, orderId, amount } = data.data;
         router.push(
@@ -327,14 +303,13 @@ export default function CheckoutPage() {
         throw new Error("No se recibió información de pago del servidor");
       }
     } catch (err: any) {
-      console.error("Checkout error:", err);
-      setErrorMsg(err.message || "❌ Error inesperado en el checkout");
+      setErrorMsg(err.message || "Error inesperado en el checkout");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Cálculos del pedido
+  // Cálculos del pedido
   const subtotal = cart?.items?.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
     0
@@ -342,7 +317,7 @@ export default function CheckoutPage() {
   const tax = subtotal * 0.16;
   const total = subtotal + tax;
 
-  // ✅ Si el carrito está vacío
+  // Si el carrito está vacío
   if (!cart || !cart.items || cart.items.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -364,7 +339,7 @@ export default function CheckoutPage() {
     );
   }
 
-  // ✅ Render principal
+  // Render principal
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
@@ -372,17 +347,8 @@ export default function CheckoutPage() {
           Checkout
         </h1>
 
-        {/* 🔧 DEBUG INFO */}
-        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800">
-            <strong>Debug Info:</strong> Direcciones cargadas: {userAddresses.length} | 
-            Token: {token ? "✅" : "❌"} | 
-            Email: {userEmail || "No disponible"}
-          </p>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 🧾 Resumen del Pedido Y DIRECCIÓN */}
+          {/* Resumen del Pedido Y DIRECCIÓN */}
           <div className="space-y-6">
             {/* Selección de Dirección */}
             <Card>
@@ -497,7 +463,7 @@ export default function CheckoutPage() {
             </Card>
           </div>
 
-          {/* 💳 Información de Pago */}
+          {/* Información de Pago */}
           <Card>
             <CardHeader className="bg-gray-50 border-b">
               <h2 className="text-xl font-semibold text-gray-900 flex items-center">
@@ -528,7 +494,7 @@ export default function CheckoutPage() {
 
               {/* Información de Usuario */}
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                <p className="font-semibold text-purple-800 mb-1">👤 Información del Usuario</p>
+                <p className="font-semibold text-purple-800 mb-1">Información del Usuario</p>
                 <p className="text-purple-700 text-sm">
                   Email: {userEmail || "No disponible"}
                 </p>
@@ -540,7 +506,7 @@ export default function CheckoutPage() {
               {/* Información de Envío */}
               {selectedAddress && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <p className="font-semibold text-green-800 mb-1">✅ Dirección de Envío Seleccionada</p>
+                  <p className="font-semibold text-green-800 mb-1">Dirección de Envío Seleccionada</p>
                   <p className="text-green-700 text-sm">
                     {selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state}
                   </p>
@@ -551,21 +517,21 @@ export default function CheckoutPage() {
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm">
                 <p className="font-semibold text-gray-900 mb-1">Información del Pedido:</p>
                 <p className="text-gray-700">• Items: {cart.items.length}</p>
-                <p className="text-gray-700">• Usuario: Autenticado ✅</p>
-                <p className="text-gray-700">• Email: {userEmail ? "Verificado ✅" : "No disponible"}</p>
-                <p className="text-gray-700">• Dirección: {selectedAddress ? "Seleccionada ✅" : "Pendiente ❌"}</p>
+                <p className="text-gray-700">• Usuario: Autenticado</p>
+                <p className="text-gray-700">• Email: {userEmail ? "Verificado" : "No disponible"}</p>
+                <p className="text-gray-700">• Dirección: {selectedAddress ? "Seleccionada" : "Pendiente"}</p>
                 <p className="text-gray-700">• Total: {formatPrice(total)}</p>
               </div>
 
-              {/* ❌ Mensaje de Error */}
+              {/* Mensaje de Error */}
               {errorMsg && (
                 <div className="bg-red-50 border border-red-400 rounded-lg p-4">
-                  <p className="font-semibold text-red-800 mb-1">❌ Error</p>
+                  <p className="font-semibold text-red-800 mb-1">Error</p>
                   <p className="text-red-700 text-sm">{errorMsg}</p>
                 </div>
               )}
 
-              {/* 🧭 Botón de Pago */}
+              {/* Botón de Pago */}
               <Button
                 onClick={handleCheckout}
                 disabled={loading || !selectedAddress}
@@ -594,7 +560,7 @@ export default function CheckoutPage() {
   );
 }
 
-// ✅ COMPONENTE DE FORMULARIO DE DIRECCIÓN
+// Componente de formulario de dirección
 function AddressForm({ onSave, onCancel, token }: { 
   onSave: (address: Address) => void; 
   onCancel: () => void;
@@ -629,13 +595,11 @@ function AddressForm({ onSave, onCancel, token }: {
 
       const data = await res.json();
       if (data.success) {
-        console.log("✅ Dirección guardada:", data.data);
         onSave(data.data);
       } else {
         alert("Error guardando dirección: " + data.message);
       }
     } catch (error) {
-      console.error("Error guardando dirección:", error);
       alert("Error guardando dirección");
     } finally {
       setLoading(false);

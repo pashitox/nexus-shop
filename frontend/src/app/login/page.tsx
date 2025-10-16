@@ -19,31 +19,24 @@ const GoogleIcon = () => (
 );
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('test@nexus.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ✅ Importa la nueva función de login con fusión de carrito
   const { loginWithCartMerge } = useAuthStore();
-
   const router = useRouter();
 
-  // ✅ MEJORA: Login con fusión de carrito
+  // ✅ Login manual (registro + autenticación normal)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      // ✅ Nueva función con merge del carrito de invitado
       await loginWithCartMerge(email, password);
-
-      const token = localStorage.getItem('token');
-      console.log('🔍 Token después del login:', token ? `✅ (${token.length} chars)` : '❌ NO ENCONTRADO');
-      
       router.push('/');
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
@@ -52,38 +45,7 @@ export default function LoginPage() {
     }
   };
 
-  // ✅ LOGIN RÁPIDO TEST
-  const handleGoogleLogin = async () => {
-    setError('');
-    setGoogleLoading(true);
-
-    try {
-      const response = await fetch('http://localhost:5001/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'test@nexus.com', password: 'password123' })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        const token = data.data.token;
-        localStorage.setItem('token', token);
-
-        useAuthStore.getState().setUser(data.data.user);
-        useAuthStore.getState().setToken(token);
-
-        router.push('/');
-      } else {
-        throw new Error(data.message || 'Error en login');
-      }
-    } catch (err: any) {
-      setError('Error: ' + err.message);
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  // ✅ LOGIN REAL CON GOOGLE OAUTH (puerto 3000)
+  // ✅ Login REAL con Google OAuth
   const handleRealGoogleLogin = () => {
     setError('');
     setGoogleLoading(true);
@@ -94,53 +56,15 @@ export default function LoginPage() {
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `response_type=code&scope=openid%20email%20profile&access_type=online&prompt=consent`;
 
-    console.log('🔗 Redirigiendo a Google OAuth REAL...');
-    console.log('📋 Redirect URI exacto:', redirectUri);
     window.location.href = googleAuthUrl;
     setGoogleLoading(false);
   };
 
-  // ✅ CREAR USUARIO TEST
-  const handleCreateTestUser = async () => {
-    setError('');
-    setGoogleLoading(true);
-
-    try {
-      const response = await fetch('http://localhost:5001/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: `test${Date.now()}@nexus.com`,
-          password: 'password123',
-          name: 'Test User'
-        })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        const token = data.data.token;
-        localStorage.setItem('token', token);
-
-        useAuthStore.getState().setUser(data.data.user);
-        useAuthStore.getState().setToken(token);
-
-        router.push('/');
-      } else {
-        setError('Error creando usuario: ' + data.message);
-      }
-    } catch {
-      setError('Error creando usuario de prueba');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  // ✅ LIMPIAR STORAGE
-  const handleClearAndTest = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('auth-storage');
-    handleGoogleLogin();
-  };
+  /* 🚫 No se usará en producción
+  const handleGoogleLogin = async () => { ... } 
+  const handleCreateTestUser = async () => { ... } 
+  const handleClearAndTest = () => { ... } 
+  */
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -157,57 +81,21 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Card */}
         <Card className="shadow-xl border-0">
-          <CardContent className="p-8">
-            
-            {/* Botones de prueba */}
-            <div className="space-y-4 mb-6">
-              <Button 
-                variant="outline" 
-                className="w-full flex items-center justify-center space-x-3 py-3 border-gray-300 hover:bg-gray-50"
-                onClick={handleGoogleLogin}
-                disabled={googleLoading}
-              >
-                {googleLoading ? <Loader className="w-5 h-5 animate-spin" /> : <GoogleIcon />}
-                <span className="text-gray-700 font-medium">
-                  {googleLoading ? 'Conectando...' : 'Acceso Rápido (Test)'}
-                </span>
-              </Button>
+          <CardContent className="p-8 space-y-6">
 
-              <Button 
-                variant="outline" 
-                className="w-full flex items-center justify-center space-x-3 py-3 border-blue-300 bg-blue-50 hover:bg-blue-100"
-                onClick={handleRealGoogleLogin}
-                disabled={googleLoading}
-              >
-                <GoogleIcon />
-                <span className="text-blue-700 font-medium">
-                  Login con Google REAL
-                </span>
-              </Button>
-
-              <Button 
-                variant="outline" 
-                className="w-full flex items-center justify-center space-x-3 py-3 border-green-300 bg-green-50 hover:bg-green-100"
-                onClick={handleCreateTestUser}
-                disabled={googleLoading}
-              >
-                <span className="text-green-700 font-medium">
-                  Crear Usuario de Prueba
-                </span>
-              </Button>
-
-              <Button 
-                variant="outline" 
-                className="w-full flex items-center justify-center space-x-3 py-3 border-red-300 bg-red-50 hover:bg-red-100"
-                onClick={handleClearAndTest}
-              >
-                <span className="text-red-700 font-medium">
-                  🔄 Limpiar y Probar Desde Cero
-                </span>
-              </Button>
-            </div>
+            {/* Solo dejar botón de login real */}
+            <Button 
+              variant="outline" 
+              className="w-full flex items-center justify-center space-x-3 py-3 border-blue-300 bg-blue-50 hover:bg-blue-100"
+              onClick={handleRealGoogleLogin}
+              disabled={googleLoading}
+            >
+              {googleLoading ? <Loader className="w-5 h-5 animate-spin" /> : <GoogleIcon />}
+              <span className="text-blue-700 font-medium">
+                {googleLoading ? 'Conectando...' : 'Login con Google'}
+              </span>
+            </Button>
 
             {/* Divider */}
             <div className="relative my-8">
@@ -215,24 +103,17 @@ export default function LoginPage() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-white text-gray-500">O ingresa manualmente</span>
+                <span className="px-3 bg-white text-gray-500">O inicia sesión manualmente</span>
               </div>
             </div>
 
-            {/* Form */}
+            {/* Formulario manual */}
             <form onSubmit={handleSubmit} className="space-y-5">
-
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800">
                   {error}
                 </div>
               )}
-
-              <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-                <strong>Credenciales de prueba:</strong><br/>
-                Email: test@nexus.com<br/>
-                Password: password123
-              </div>
 
               <Input
                 label="Email"
@@ -263,16 +144,6 @@ export default function LoginPage() {
                 }
               />
 
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center space-x-2 text-gray-600">
-                  <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-2" />
-                  <span>Recordar mi cuenta</span>
-                </label>
-                <Link href="/forgot-password" className="text-primary-600 hover:text-primary-700">
-                  ¿Olvidaste tu contraseña?
-                </Link>
-              </div>
-
               <Button 
                 type="submit" 
                 isLoading={isLoading} 
@@ -285,7 +156,6 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        {/* Sign Up Link */}
         <div className="text-center">
           <p className="text-gray-600">
             ¿No tienes una cuenta?{' '}

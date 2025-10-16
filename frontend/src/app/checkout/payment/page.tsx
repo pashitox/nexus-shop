@@ -1,4 +1,3 @@
-// frontend/src/app/checkout/payment/page.tsx - VERSIÓN CORREGIDA
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, Loader, Shield, CheckCircle } from 'lucide-react';
 
-// ✅ Stripe Promise seguro
+// Stripe Promise seguro
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
   : null;
@@ -24,16 +23,11 @@ function CheckoutForm() {
   const [error, setError] = useState('');
   const [succeeded, setSucceeded] = useState(false);
   const [clientSecret, setClientSecret] = useState<string>('');
-  const [billingDetails, setBillingDetails] = useState({
-    name: '',
-    email: '',
-    phone: ''
-  });
 
   const orderId = searchParams.get('orderId');
   const amount = searchParams.get('amount');
 
-  // ✅ Obtener clientSecret de forma segura
+  // Obtener clientSecret de forma segura
   useEffect(() => {
     const clientSecretParam = searchParams.get('clientSecret');
     if (clientSecretParam) {
@@ -41,7 +35,7 @@ function CheckoutForm() {
     }
   }, [searchParams]);
 
-  // ✅ Verificar si el pago ya fue procesado
+  // Verificar si el pago ya fue procesado
   useEffect(() => {
     if (!stripe || !clientSecret) return;
 
@@ -61,19 +55,10 @@ function CheckoutForm() {
     setError('');
 
     try {
-      // ✅ SOLUCIÓN: Pasar billing details en confirmParams
       const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/checkout/success?orderId=${orderId}`,
-          // ✅ Agregar billing details aquí
-          payment_method_data: {
-            billing_details: {
-              name: billingDetails.name || 'Cliente',
-              email: billingDetails.email || 'cliente@ejemplo.com',
-              phone: billingDetails.phone || '+525511223344',
-            }
-          }
         },
         redirect: 'if_required',
       });
@@ -93,15 +78,7 @@ function CheckoutForm() {
     }
   };
 
-  // Manejar cambios en los datos de facturación
-  const handleBillingChange = (field: string, value: string) => {
-    setBillingDetails(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // ✅ Mensaje de carga inicial
+  // Mensaje de carga inicial
   if (!clientSecret) {
     return (
       <div className="text-center py-12">
@@ -111,7 +88,7 @@ function CheckoutForm() {
     );
   }
 
-  // ✅ Estado de éxito
+  // Estado de éxito
   if (succeeded) {
     return (
       <div className="text-center py-12">
@@ -127,7 +104,7 @@ function CheckoutForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* 🛡️ Caja informativa */}
+      {/* Caja informativa */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-center space-x-2 text-blue-800">
           <Shield className="w-5 h-5" />
@@ -138,64 +115,25 @@ function CheckoutForm() {
         </p>
       </div>
 
-      {/* 📝 Datos de Facturación (Opcional) */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <h3 className="font-medium text-gray-900 mb-3">Datos de Facturación</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre completo
-            </label>
-            <input
-              type="text"
-              value={billingDetails.name}
-              onChange={(e) => handleBillingChange('name', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Juan Pérez"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={billingDetails.email}
-              onChange={(e) => handleBillingChange('email', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="juan@ejemplo.com"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 💳 Elemento de pago - CONFIGURACIÓN CORREGIDA */}
+      {/* Elemento de pago */}
       <PaymentElement 
         options={{ 
-          layout: 'tabs',
-          // ✅ CONFIGURACIÓN SEGURA - sin fields restrictivos
-          fields: {
-            billingDetails: {
-              name: 'auto',    // ← 'auto' en lugar de 'never'
-              email: 'auto',
-              phone: 'auto',
-            }
-          }
+          layout: 'tabs'
         }} 
       />
 
-      {/* ⚠️ Mensaje de error */}
+      {/* Mensaje de error */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
 
-      {/* 💰 Botón principal */}
+      {/* Botón principal */}
       <Button
         type="submit"
         disabled={!stripe || isLoading}
-        className="w-full py-3 text-lg bg-black hover:bg-gray-900 text-white rounded-xl"
+        className="w-full py-3 text-lg bg-black hover:bg-gray-900 text-white rounded-lg transition-colors duration-200"
       >
         {isLoading ? (
           <>
@@ -207,13 +145,13 @@ function CheckoutForm() {
         )}
       </Button>
 
-      {/* 🔙 Botón volver */}
+      {/* Botón volver */}
       <div className="text-center">
         <Button
           type="button"
           variant="outline"
           onClick={() => router.back()}
-          className="inline-flex items-center text-gray-700 border-gray-300 hover:bg-gray-100"
+          className="inline-flex items-center text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors duration-200"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Volver al Checkout
@@ -231,7 +169,7 @@ export default function PaymentPage() {
   const orderId = searchParams.get('orderId');
   const amount = searchParams.get('amount');
 
-  // ✅ Obtener clientSecret de forma segura
+  // Obtener clientSecret de forma segura
   useEffect(() => {
     const clientSecretParam = searchParams.get('clientSecret');
     if (clientSecretParam) {
@@ -240,9 +178,8 @@ export default function PaymentPage() {
     }
   }, [searchParams]);
 
-  // ✅ SOLUCIÓN: Configuración corregida sin paymentMethodConfiguration
   const options = {
-    clientSecret: clientSecret || undefined, // ✅ Asegurar que no sea null
+    clientSecret: clientSecret || undefined,
     appearance: {
       theme: 'stripe' as const,
       variables: {
@@ -253,11 +190,11 @@ export default function PaymentPage() {
     },
   };
 
-  // ✅ Mostrar loading mientras se carga clientSecret
+  // Mostrar loading mientras se carga clientSecret
   if (!isReady || !stripePromise) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md mx-4">
           <CardContent className="p-6 text-center">
             <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-400" />
             <p className="text-gray-600 mb-4">
@@ -288,9 +225,9 @@ export default function PaymentPage() {
           </p>
         </div>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="bg-gray-50 border-b">
-            <h2 className="text-xl font-semibold">Información de Pago</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Información de Pago</h2>
           </CardHeader>
           <CardContent className="p-6">
             <Elements stripe={stripePromise} options={options}>
@@ -299,25 +236,25 @@ export default function PaymentPage() {
           </CardContent>
         </Card>
 
-        {/* 🧠 Sección de seguridad */}
-        <div className="mt-6 grid grid-cols-3 gap-4 text-center text-sm text-gray-600">
-          <div>
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-1">
-              <span className="text-green-600">🔒</span>
+        {/* Sección de seguridad */}
+        <div className="mt-8 grid grid-cols-3 gap-4 text-center text-sm text-gray-600">
+          <div className="bg-white rounded-lg p-3 shadow-sm">
+            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+              <span className="text-green-600 text-xs font-bold">SSL</span>
             </div>
-            <span>Encriptado SSL</span>
+            <span className="font-medium">Encriptado</span>
           </div>
-          <div>
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-1">
-              <span className="text-blue-600">🛡️</span>
+          <div className="bg-white rounded-lg p-3 shadow-sm">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+              <Shield className="w-4 h-4 text-blue-600" />
             </div>
-            <span>Protegido</span>
+            <span className="font-medium">Protegido</span>
           </div>
-          <div>
-            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-1">
-              <span className="text-purple-600">✓</span>
+          <div className="bg-white rounded-lg p-3 shadow-sm">
+            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+              <CheckCircle className="w-4 h-4 text-purple-600" />
             </div>
-            <span>Verificado</span>
+            <span className="font-medium">Verificado</span>
           </div>
         </div>
       </div>
