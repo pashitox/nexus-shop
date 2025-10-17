@@ -7,6 +7,7 @@ import { ordersRoutes } from './routes/orders.routes';
 import { addressesRoutes } from './routes/addresses.routes';
 import { paymentsRoutes } from './routes/payments.routes';
 import { debugEmailRoute } from './utils/email-debug';
+import assistantRoutes from './routes/assistant.routes';
 
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 
@@ -36,7 +37,7 @@ app.use('/api/orders', ordersRoutes);
 app.use('/api/addresses', addressesRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.post('/api/debug-email', debugEmailRoute);
-
+app.use('/api/ai', assistantRoutes);
 
 
 
