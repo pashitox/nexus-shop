@@ -1,22 +1,4 @@
-# 🚀 NexusShop - Modern E-commerce Platform
-
-## 📋 Table of Contents
-- [✨ Features](#-features)
-- [🏗️ System Architecture](#️-system-architecture)
-- [🌐 Services and Ports](#-services-and-ports)
-- [🚀 Quick Start](#-quick-start)
-- [📁 Project Structure](#-project-structure)
-- [🛍️ Core Features](#️-core-features)
-- [🔧 API Endpoints](#-api-endpoints)
-- [🛡️ Security Features](#️-security-features)
-- [💳 Payment Integration](#-payment-integration)
-- [🧪 Testing & Quality](#-testing--quality)
-- [🐳 Docker Commands](#-docker-commands)
-- [🚨 Troubleshooting](#-troubleshooting)
-- [📈 Monitoring](#-monitoring)
-- [🤝 Contribution](#-contribution)
-
----
+# 🚀 NexusShop - Modern E-commerce Platform with AI Integration
 
 ## ✨ Features
 
@@ -26,6 +8,12 @@
 - **💳 Stripe Integration** for secure payment processing
 - **🔐 Multi-auth System** (Email/Password + Google OAuth)
 - **📱 Responsive Design** with modern UI/UX
+
+### 🤖 AI-Powered Shopping Assistant
+- **💬 Real-time Chat** with virtual shopping assistant
+- **🎯 Personalized Recommendations** based on preferences
+- **🔍 Intelligent Search** with natural language processing
+- **🛍️ AI-Driven Product Discovery**
 
 ### 🔧 Technical Excellence
 - **⚡ Real-time Inventory Management**
@@ -46,13 +34,17 @@
 ## 🏗️ System Architecture
 
 ```
-🌐 Client Layer (Frontend)
+🌐 Client Layer (Frontend + AI Chat Widget)
+    ↓
+🤖 AI Assistant Layer (Chat + Recommendations)
     ↓
 🛡️ API Gateway (Backend API)
     ↓
-🔧 Business Logic (Controllers)
+🔧 Business Logic (Controllers + AI Service)
     ↓
 🗄️ Data Layer (PostgreSQL + Prisma)
+    ↓
+🧠 External AI (OpenAI GPT)
     ↓
 💾 Storage (Images + Assets)
     ↓
@@ -67,11 +59,19 @@
 |---------|-----|------|---------|----------|
 | 🎨 **Frontend** | http://localhost:3000 | 3000 | ✅ Operational | Next.js E-commerce UI |
 | 🔧 **Backend API** | http://localhost:5001/api | 5001 | ✅ Operational | Express.js REST API |
+| 🤖 **AI Assistant** | http://localhost:5001/api/ai | 5001 | ✅ Operational | AI Chat & Recommendations |
 | 🗄️ **PostgreSQL** | localhost:5433 | 5433 | ✅ Operational | Primary Database |
 | 🐘 **PgAdmin** | http://localhost:5050 | 5050 | ✅ Operational | Database Management |
 | 📧 **Resend** | External | - | ✅ Operational | Email Service |
 | 💳 **Stripe** | External | - | ✅ Operational | Payment Processing |
 | 🔐 **Google OAuth** | External | - | ✅ Operational | Social Authentication |
+
+![Docker](https://img.shields.io/badge/DOCKER-RUNNING-blue?style=for-the-badge&logo=docker)
+![PostgreSQL](https://img.shields.io/badge/POSTGRESQL-OPERATIONAL-green?style=for-the-badge&logo=postgresql)
+![AI](https://img.shields.io/badge/AI%20ASSISTANT-ACTIVE-orange?style=for-the-badge&logo=openai)
+![Stripe](https://img.shields.io/badge/STRIPE-INTEGRATED-blueviolet?style=for-the-badge&logo=stripe)
+![Security](https://img.shields.io/badge/SECURITY-AUDITED-yellow?style=for-the-badge&logo=security)
+![TypeScript](https://img.shields.io/badge/TYPESCRIPT-FULL-blue?style=for-the-badge&logo=typescript)
 
 ---
 
@@ -82,6 +82,7 @@
 - Node.js 18+ (for development)
 - Stripe Account
 - Google Cloud Project
+- OpenAI API Key
 
 ### 1. Clone & Setup
 ```bash
@@ -97,13 +98,28 @@ cp frontend/.env.example frontend/.env
 ### 2. Configure Environment
 **Backend (.env):**
 ```env
+# Database
 DATABASE_URL="postgresql://user:password@db:5432/nexusshop"
 JWT_SECRET="your-super-secure-jwt-secret"
+
+# Payments
 STRIPE_SECRET_KEY="sk_test_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
+
+# Authentication
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
+# Email
 RESEND_API_KEY="re_..."
+
+# AI Assistant
+OPENAI_API_KEY="sk-your-openai-api-key"
+AI_MODEL="gpt-3.5-turbo"
+AI_MAX_TOKENS=1000
+AI_TEMPERATURE=0.7
+
+# Frontend
 FRONTEND_URL="http://localhost:3000"
 ```
 
@@ -131,9 +147,10 @@ docker compose ps
 
 ### 4. Access Applications
 ```bash
-echo "🎉 NexusShop is running!"
+echo "🎉 NexusShop with AI Assistant is running!"
 echo "Frontend: http://localhost:3000"
 echo "Backend API: http://localhost:5001/api"
+echo "AI Health: http://localhost:5001/api/ai/health"
 echo "PgAdmin: http://localhost:5050"
 ```
 
@@ -154,7 +171,8 @@ nexus-shop/
 │   │   ├── auth/              # Auth Components
 │   │   ├── products/          # Product Components
 │   │   ├── cart/              # Cart Components
-│   │   └── checkout/          # Checkout Components
+│   │   ├── checkout/          # Checkout Components
+│   │   └── ai-assistant/      # 🤖 AI Assistant Components
 │   ├── src/lib/               # Utilities & Config
 │   └── src/types/             # TypeScript Definitions
 │
@@ -163,6 +181,7 @@ nexus-shop/
 │   │   ├── controllers/       # Business Logic
 │   │   ├── routes/            # API Routes
 │   │   ├── middleware/        # Custom Middleware
+│   │   ├── services/          # 🤖 AI Services
 │   │   ├── utils/             # Utilities
 │   │   └── types/             # Type Definitions
 │   ├── prisma/                # Database Schema
@@ -171,6 +190,7 @@ nexus-shop/
 ├── 📊 scripts/                # Utility Scripts
 │   ├── security-audit.sh      # Security Testing
 │   ├── system-test.sh         # System Validation
+│   ├── test-ai-assistant.sh   # 🤖 AI Testing
 │   └── deployment/            # Deployment Scripts
 │
 ├── 🐳 docker-compose.yml      # Main Docker Compose
@@ -179,34 +199,47 @@ nexus-shop/
 
 ---
 
-## 🛍️ Core Features
+## 🤖 AI Assistant Features
 
-### 🔐 Authentication System
-- **Email/Password Registration** with validation
-- **Google OAuth 2.0 Integration** for social login
-- **JWT Token Management** with secure storage
-- **Session Management** for both users and guests
-- **Password Recovery** with email verification
+### 🧠 Core Capabilities
+- **Natural Language Product Search** - "Find elegant smartphones under $1000"
+- **Personalized Recommendations** - Based on user preferences and context
+- **Conversational Commerce** - Chat-based shopping experience
+- **Multi-language Support** - Spanish/English conversations
+- **Session Memory** - Maintains conversation context
 
-### 🛒 Shopping Experience
-- **Product Catalog** with search and filters
-- **Product Details** with images and descriptions
-- **Shopping Cart** with persistent storage
-- **Guest Checkout** without registration
-- **Wishlist Functionality** (planned)
+### 💬 Example Interactions
+```
+User: "I need casual clothing for summer"
+AI: "Perfect! I recommend:
+     - Blue Casual Shirt ($899)
+     - Slim Fit Jeans ($1299)
+     - Summer Hoodie ($799)
+     
+     Which style are you interested in?"
 
-### 💳 Checkout & Payments
-- **Multi-step Checkout Process**
-- **Address Management** with validation
-- **Stripe Payment Integration**
-- **Order Confirmation** with email receipts
-- **Order History & Tracking**
+User: "Just show me shirts under $1000"
+AI: "Great choice! Here are affordable shirts..."
+```
 
-### 👤 User Management
-- **Profile Management** with editable information
-- **Address Book** with multiple shipping addresses
-- **Order History** with detailed tracking
-- **Account Settings** and preferences
+### 🔧 Technical Implementation
+```typescript
+// AI Service Integration
+interface AIService {
+  chat(message: string, sessionId: string): Promise<AIResponse>;
+  recommendProducts(context: ProductContext): Promise<Product[]>;
+  analyzeUserIntent(message: string): UserIntent;
+}
+
+// AI Response Structure
+interface AIResponse {
+  success: boolean;
+  message: string;
+  recommendedProducts: Product[];
+  context: any;
+  nextQuestions: string[];
+}
+```
 
 ---
 
@@ -220,6 +253,13 @@ POST /api/auth/google       # Google OAuth
 GET  /api/auth/profile      # User profile
 POST /api/auth/logout       # Logout
 POST /api/auth/refresh      # Token refresh
+```
+
+### 🤖 AI Assistant
+```http
+POST /api/ai/chat           # 🤖 Chat with AI assistant
+GET  /api/ai/health         # 🤖 AI service health check
+POST /api/ai/recommend      # 🤖 Product recommendations
 ```
 
 ### 📦 Products
@@ -249,15 +289,6 @@ POST   /api/payments/intent # Create payment intent
 POST   /api/payments/webhook # Stripe webhook
 ```
 
-### 🏠 Addresses
-```http
-GET    /api/addresses       # User addresses
-POST   /api/addresses       # Create address
-PUT    /api/addresses/:id   # Update address
-DELETE /api/addresses/:id   # Delete address
-PUT    /api/addresses/:id/default # Set default address
-```
-
 ---
 
 ## 🛡️ Security Features
@@ -269,8 +300,15 @@ PUT    /api/addresses/:id/default # Set default address
 - **XSS Prevention** with input sanitization
 - **CSRF Protection** for state-changing operations
 - **CORS Configuration** with allowed origins
-- **Rate Limiting** on authentication endpoints
+- **Rate Limiting** on authentication and AI endpoints
 - **Security Headers** (Helmet.js)
+
+### 🤖 AI Security
+- **Authentication Required** for AI chat access
+- **Input Validation** and sanitization for AI messages
+- **Rate Limiting** on AI endpoints (10 requests/minute)
+- **Content Moderation** for AI responses
+- **Usage Logging** for audit purposes
 
 ### 🧪 Security Testing
 ```bash
@@ -278,25 +316,13 @@ PUT    /api/addresses/:id/default # Set default address
 chmod +x scripts/security-audit.sh
 ./scripts/security-audit.sh
 
+# Run AI-specific security tests
+chmod +x scripts/test-ai-security.sh
+./scripts/test-ai-security.sh
+
 # Run system tests
 chmod +x scripts/system-test.sh
 ./scripts/system-test.sh
-```
-
-### 📊 Security Headers
-```typescript
-// Security middleware configuration
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-  crossOriginEmbedderPolicy: false
-}));
 ```
 
 ---
@@ -334,6 +360,9 @@ const paymentIntent = await stripe.paymentIntents.create({
 # Run security audit
 ./scripts/security-audit.sh
 
+# Run AI assistant tests
+./scripts/test-ai-assistant.sh
+
 # Run system integration tests
 ./scripts/system-test.sh
 
@@ -346,6 +375,7 @@ docker compose exec backend npm run lint
 
 ### Test Coverage
 - **✅ Authentication Flow** (Register → Login → Profile)
+- **✅ AI Assistant** (Chat → Recommendations → Products)
 - **✅ Product Management** (List → Details → Cart)
 - **✅ Cart Operations** (Add → Update → Remove)
 - **✅ Checkout Process** (Cart → Address → Payment)
@@ -390,19 +420,16 @@ docker compose exec postgres psql -U postgres -d nexusshop
 docker compose exec backend npx prisma migrate reset
 ```
 
-### Development Commands
+### AI-Specific Commands
 ```bash
-# Install dependencies
-docker compose exec backend npm install
-docker compose exec frontend npm install
+# Test AI service
+docker compose exec backend curl http://localhost:5001/api/ai/health
 
-# Run in development mode
-docker compose exec backend npm run dev
-docker compose exec frontend npm run dev
+# View AI logs
+docker compose logs backend | grep -i "ai\|chat"
 
-# Build for production
-docker compose exec backend npm run build
-docker compose exec frontend npm run build
+# Clear AI sessions
+docker compose exec backend npm run ai:clear-sessions
 ```
 
 ---
@@ -413,20 +440,21 @@ docker compose exec frontend npm run build
 
 | Issue | Symptoms | Solution |
 |-------|----------|----------|
+| **AI Chat not visible** | Chat button missing | Verify user authentication |
+| **AI responses timeout** | No response from assistant | Check OPENAI_API_KEY configuration |
+| **Products not showing** | Empty recommendations | Verify product data structure |
+| **Authentication errors** | 401 errors in chat | Check authChange events |
 | **Backend won't start** | Connection refused on port 5001 | Check database connection and environment variables |
 | **Database connection failed** | Prisma migration errors | Verify DATABASE_URL in backend/.env |
-| **Stripe payments failing** | Payment intent creation errors | Check STRIPE_SECRET_KEY and webhook configuration |
-| **Google OAuth not working** | Redirect URI mismatch | Update Google Cloud Console redirect URIs |
-| **Frontend build errors** | TypeScript compilation fails | Run `npx tsc --noEmit` to identify issues |
 
 ### Diagnostic Commands
 ```bash
-# Check service health
-curl http://localhost:5001/api/health
+# Check AI service health
+curl http://localhost:5001/api/ai/health
 
-# Verify environment variables
-docker compose exec backend printenv | grep STRIPE
-docker compose exec backend printenv | grep GOOGLE
+# Verify AI environment variables
+docker compose exec backend printenv | grep AI
+docker compose exec backend printenv | grep OPENAI
 
 # Check database connection
 docker compose exec backend npx prisma db status
@@ -459,6 +487,9 @@ docker compose exec backend npx prisma db seed
 # API Health
 curl http://localhost:5001/api/health
 
+# AI Health
+curl http://localhost:5001/api/ai/health
+
 # Database Health
 docker compose exec postgres pg_isready
 
@@ -466,11 +497,12 @@ docker compose exec postgres pg_isready
 docker compose ps
 ```
 
-### Performance Monitoring
-- **Response Time Tracking** for critical endpoints
-- **Database Query Performance** with Prisma logging
-- **Memory Usage Monitoring** in production
-- **Error Rate Tracking** with structured logging
+### AI Performance Metrics
+- **Response Time Tracking** for AI endpoints
+- **Token Usage Monitoring** for cost optimization
+- **User Engagement Metrics** with AI assistant
+- **Recommendation Effectiveness** tracking
+- **Error Rate Monitoring** for AI services
 
 ---
 
@@ -498,6 +530,7 @@ docker compose ps
 - **Conventional commits** for commit messages
 - **PR templates** for pull requests
 - **Code review** required for all changes
+- **AI feature testing** required for AI-related changes
 
 ---
 
@@ -507,7 +540,8 @@ docker compose ps
 1. **Check the troubleshooting section** above
 2. **Review service logs** with `docker compose logs`
 3. **Run diagnostic scripts** in the scripts/ directory
-4. **Open an issue** with:
+4. **Test AI functionality** with provided test scripts
+5. **Open an issue** with:
    - Detailed description of the problem
    - Steps to reproduce
    - Relevant logs and error messages
@@ -522,15 +556,16 @@ docker compose ps
 
 ## 🎯 Status Badges
 
-![Docker](https://img.shields.io/badge/Docker-Running-blue?style=for-the-badge&logo=docker)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Operational-green?style=for-the-badge&logo=postgresql)
-![Stripe](https://img.shields.io/badge/Stripe-Integrated-blueviolet?style=for-the-badge&logo=stripe)
-![Security](https://img.shields.io/badge/Security-Audited-yellow?style=for-the-badge&logo=security)
-![TypeScript](https://img.shields.io/badge/TypeScript-Full%20Coverage-blue?style=for-the-badge&logo=typescript)
+![Docker](https://img.shields.io/badge/DOCKER-RUNNING-blue?style=for-the-badge&logo=docker)
+![PostgreSQL](https://img.shields.io/badge/POSTGRESQL-OPERATIONAL-green?style=for-the-badge&logo=postgresql)
+![AI Assistant](https://img.shields.io/badge/AI%20ASSISTANT-ACTIVE-orange?style=for-the-badge&logo=openai)
+![Stripe](https://img.shields.io/badge/STRIPE-INTEGRATED-blueviolet?style=for-the-badge&logo=stripe)
+![Security](https://img.shields.io/badge/SECURITY-AUDITED-yellow?style=for-the-badge&logo=security)
+![TypeScript](https://img.shields.io/badge/TYPESCRIPT-FULL-blue?style=for-the-badge&logo=typescript)
 
 ---
 
 **⭐ If you find NexusShop useful, please give it a star on GitHub!**
 
 ---
-*Built with ❤️ using Next.js, Express, PostgreSQL, and modern web technologies.*
+*Built with ❤️ using Next.js, Express, PostgreSQL, OpenAI, and modern web technologies.*
