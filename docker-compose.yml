@@ -1,4 +1,4 @@
-version: "3.9"
+version: '3.8'
 
 services:
   postgres:
@@ -16,37 +16,41 @@ services:
     networks:
       - nexus_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus_user -d nexus_shop"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   backend:
     build: 
       context: ./backend
       dockerfile: Dockerfile
     container_name: nexusshop_backend
-    environment:
-      DATABASE_URL: "postgresql://nexus_user:nexus_password@postgres:5432/nexus_shop"
-      JWT_SECRET: "tu_jwt_secret_super_seguro_aqui_123456789"
-      STRIPE_SECRET_KEY: "sk_test_..."
-      NODE_ENV: "development"
+    # ⚠️ REMOVIMOS TODAS LAS VARIABLES DE AQUÍ - se cargarán desde backend/.env
     ports:
       - "5001:5001"
     volumes:
       - ./backend:/app
       - /app/node_modules
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - nexus_network
     restart: unless-stopped
-    command: sh -c "npx prisma generate && npx tsx server.ts"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: nexusshop_frontend
-    environment:
-      NEXT_PUBLIC_API_URL: "http://localhost:5001/api"
-      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_..."
+    # ⚠️ REMOVIMOS TODAS LAS VARIABLES DE AQUÍ - se cargarán desde frontend/.env
     ports:
       - "3000:3000"
     volumes:
@@ -54,7 +58,8 @@ services:
       - /app/node_modules
       - /app/.next
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - nexus_network
     restart: unless-stopped

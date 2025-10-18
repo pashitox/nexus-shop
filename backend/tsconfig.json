@@ -12,6 +12,6 @@
     "rootDir": "./src",
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "types/types.ts", "types/assistant.ts", "routes/assistant.routes.ts", "controllers/assistant.controller.ts"],
   "exclude": ["node_modules", "dist"]
 }

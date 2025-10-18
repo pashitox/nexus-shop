@@ -1,8 +1,24 @@
+# Dependencias
 node_modules/
 */node_modules/
+
+# Build
 .next/
 out/
 build/
+
+# Archivos sensibles
 .env
+backend/.env
+.env.local
+backend/.env.local
 .DS_Store
 *.log
+
+# Ignorar archivos locales de configuración
+.vscode/
+.idea/
+
+# Comentarios informativos
+# Cada desarrollador debe tener su propio .env local
+# docker-compose.yml lo mantenemos en el repo

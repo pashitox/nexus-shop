@@ -6,12 +6,23 @@ import { cartRoutes } from './routes/cart.routes';
 import { ordersRoutes } from './routes/orders.routes';
 import { addressesRoutes } from './routes/addresses.routes';
 import { paymentsRoutes } from './routes/payments.routes';
+import { debugEmailRoute } from './utils/email-debug';
+import assistantRoutes from './routes/assistant.routes';
+
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 
 const app = express();
 
 // Middlewares
 app.use(cors());
+app.use((req, res, next) => {
+  console.log("🌐 REQUEST:", req.method, req.url, new Date().toISOString());
+  next();
+});
+
+
+
+
 
 // Webhook necesita raw body - debe estar antes de express.json()
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
@@ -25,6 +36,12 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/addresses', addressesRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.post('/api/debug-email', debugEmailRoute);
+app.use('/api/ai', assistantRoutes);
+
+
+
+
 
 // Health check
 app.get('/api/health', (req, res) => {
