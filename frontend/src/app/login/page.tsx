@@ -37,6 +37,11 @@ export default function LoginPage() {
 
     try {
       await loginWithCartMerge(email, password);
+      
+      // 🔥 NUEVO: Disparar evento de autenticación
+      window.dispatchEvent(new Event('authChange'));
+      console.log('🔐 Evento authChange disparado después del login');
+      
       router.push('/');
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
@@ -56,15 +61,13 @@ export default function LoginPage() {
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `response_type=code&scope=openid%20email%20profile&access_type=online&prompt=consent`;
 
+    // 🔥 NUEVO: Disparar evento antes de redirigir a Google
+    window.dispatchEvent(new Event('authChange'));
+    console.log('🔐 Evento authChange disparado para Google login');
+    
     window.location.href = googleAuthUrl;
     setGoogleLoading(false);
   };
-
-  /* 🚫 No se usará en producción
-  const handleGoogleLogin = async () => { ... } 
-  const handleCreateTestUser = async () => { ... } 
-  const handleClearAndTest = () => { ... } 
-  */
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">

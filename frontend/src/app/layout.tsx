@@ -1,14 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
-import './globals.css'; // Cambié la ruta
+import './globals.css';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ToastProvider } from '@/components/ui/Toast';
+import { ChatWidget } from '@/app/ia-assistant/ChatWidget';
 
 const inter = Inter({ subsets: ['latin'] });
-
-
-
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -18,10 +16,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: {
     default: 'NexusShop - Tu tienda online de confianza',
-    template: '%s | NexusShop'
+    template: '%s | NexusShop',
   },
-  description: 'Descubre los mejores productos al mejor precio en NexusShop',
-  keywords: 'tienda, ecommerce, productos, compras online',
+  description: 'Descubre los mejores productos al mejor precio en NexusShop con asistente IA',
+  keywords: 'tienda, ecommerce, productos, compras online, asistente IA',
   authors: [{ name: 'NexusShop' }],
 };
 
@@ -41,6 +39,9 @@ export default function RootLayout({
             </main>
             <Footer />
           </div>
+
+          {/* 🆕 Widget de Chat IA */}
+          <ChatWidget />
         </ToastProvider>
       </body>
     </html>
