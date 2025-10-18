@@ -27,6 +27,41 @@ const checkAuthStatus = (): boolean => {
   }
 };
 
+// 🔥 NUEVA FUNCIÓN: Extraer solo la respuesta final (después del pensamiento)
+const extractFinalResponse = (message: string): string => {
+  console.log('📝 Procesando mensaje completo:', message);
+  
+  // Buscar patrones comunes donde termina el pensamiento y empieza la respuesta
+  const patterns = [
+    /\n\n¡/, // Doble salto de línea seguido de ¡ (español)
+    /\n\n\*/, // Doble salto de línea seguido de * (markdown)
+    /\n\n[A-Z]/, // Doble salto de línea seguido de mayúscula
+    /¡[A-Z]/, // ¡ seguido de mayúscula (inicio de respuesta en español)
+    /Okay, [^]+?\n\n([^]+)/, // Patrón común en inglés
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match && match.index) {
+      const finalResponse = message.substring(match.index).trim();
+      console.log('✅ Respuesta final extraída:', finalResponse);
+      return finalResponse;
+    }
+  }
+
+  // Si no encontramos patrón, buscar la última parte después de doble salto de línea
+  const lastDoubleNewline = message.lastIndexOf('\n\n');
+  if (lastDoubleNewline !== -1) {
+    const finalResponse = message.substring(lastDoubleNewline + 2).trim();
+    console.log('✅ Respuesta final (última parte):', finalResponse);
+    return finalResponse;
+  }
+
+  // Si todo falla, devolver el mensaje completo pero limpiado
+  console.log('⚠️ Usando mensaje completo (sin filtro)');
+  return message.replace(/Okay, [^]+?\.\s+/g, '').trim();
+};
+
 export const useChatAssistant = (): UseChatAssistant => {
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -38,7 +73,7 @@ export const useChatAssistant = (): UseChatAssistant => {
     const updateAuthStatus = () => {
       const authStatus = checkAuthStatus();
       setIsAuthenticated(authStatus);
-      console.log('🔐 Estado de autenticación:', authStatus);
+      console.log('🔐 Authentication status:', authStatus);
     };
 
     updateAuthStatus();
@@ -61,13 +96,13 @@ export const useChatAssistant = (): UseChatAssistant => {
   const startChat = useCallback(async () => {
     try {
       if (!isAuthenticated) {
-        console.warn('Usuario no autenticado - no se puede iniciar chat');
+        console.warn('User not authenticated - cannot start chat');
         return;
       }
 
       const token = localStorage.getItem('token');
       if (!token) {
-        console.error('Token no encontrado en localStorage');
+        console.error('Token not found in localStorage');
         return;
       }
 
@@ -76,11 +111,11 @@ export const useChatAssistant = (): UseChatAssistant => {
       
       setMessages([{
         role: 'assistant',
-        content: '¡Hola! 👋 Soy tu asistente personal de NexusShop. ¿En qué puedo ayudarte hoy?',
+        content: 'Hello! 👋 I am your personal NexusShop assistant. How can I help you today?',
         timestamp: new Date()
       }]);
 
-      console.log('💬 Chat iniciado con session:', newSessionId);
+      console.log('💬 Chat started with session:', newSessionId);
     } catch (error) {
       console.error('Error starting chat:', error);
     }
@@ -91,7 +126,7 @@ export const useChatAssistant = (): UseChatAssistant => {
     if (!isAuthenticated) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '🔐 Por favor, inicia sesión para usar el asistente de IA.',
+        content: '🔐 Please log in to use the AI assistant.',
         timestamp: new Date()
       }]);
       return;
@@ -101,7 +136,7 @@ export const useChatAssistant = (): UseChatAssistant => {
     if (!token) {
       setMessages(prev => [...prev, {
         role: 'assistant', 
-        content: '❌ Error de autenticación. Por favor, recarga la página.',
+        content: '❌ Authentication error. Please reload the page.',
         timestamp: new Date()
       }]);
       return;
@@ -120,7 +155,7 @@ export const useChatAssistant = (): UseChatAssistant => {
     setIsTyping(true);
 
     try {
-      console.log('📤 Enviando mensaje a IA:', message);
+      console.log('📤 Sending message to AI:', message);
       
       const response = await fetch('http://localhost:5001/api/ai/chat', {
         method: 'POST',
@@ -134,41 +169,43 @@ export const useChatAssistant = (): UseChatAssistant => {
         })
       });
 
-      console.log('📥 Respuesta del servidor:', response.status);
+      console.log('📥 Server response:', response.status);
 
       if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
+        throw new Error(`HTTP Error: ${response.status}`);
       }
 
       const data: AIResponse = await response.json();
-      console.log('🤖 Respuesta IA recibida COMPLETA:', JSON.stringify(data, null, 2));
+      console.log('🤖 Full AI response:', JSON.stringify(data, null, 2));
       
       if (data.success) {
-        // 🔥 CORRECCIÓN CRÍTICA: La estructura real es data.data.message y data.data.recommendedProducts
         const responseData = data.data || data;
-        const messageContent = responseData.message || data.message || 'No response';
+        const fullMessage = responseData.message || data.message || 'No response';
         const products = responseData.recommendedProducts || data.recommendedProducts || [];
 
-        console.log('📦 Productos extraídos:', products);
-        console.log('💬 Mensaje extraído:', messageContent);
+        console.log('📦 Products extracted:', products);
+        console.log('💬 Full message:', fullMessage);
+
+        // 🔥 CORRECCIÓN: Extraer solo la respuesta final
+        const finalMessage = extractFinalResponse(fullMessage);
 
         const assistantMessage: AIMessage = {
           role: 'assistant',
-          content: messageContent,
+          content: finalMessage,
           timestamp: new Date(),
           products: products
         };
         
         setMessages(prev => [...prev, assistantMessage]);
       } else {
-        throw new Error(data.message || 'Error en la respuesta de IA');
+        throw new Error(data.message || 'Error in AI response');
       }
     } catch (error) {
-      console.error('❌ Error enviando mensaje:', error);
+      console.error('❌ Error sending message:', error);
       
       const errorMessage: AIMessage = {
         role: 'assistant',
-        content: '⚠️ Lo siento, hubo un error al conectar con el asistente. Por favor, intenta nuevamente.',
+        content: '⚠️ Sorry, there was an error connecting to the assistant. Please try again.',
         timestamp: new Date()
       };
       

@@ -75,6 +75,167 @@
 
 ---
 
+## 📁 Project Structure
+
+### 🗃️ Database Schema (Prisma)
+```prisma
+// Complete schema as provided
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  password  String?
+  image     String?
+  provider  String?
+  providerId String?
+  addresses Address[]
+  orders    Order[]
+  cart      Cart?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  price       Decimal
+  image       String
+  stock       Int      @default(0)
+  category    String?
+  active      Boolean  @default(true)
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ... (full schema as provided)
+```
+
+### 🏗️ Backend Structure
+```
+backend/
+├── src/
+│   ├── controllers/
+│   │   ├── auth.controller.ts
+│   │   ├── products.controller.ts
+│   │   ├── orders.controller.ts
+│   │   ├── cart.controller.ts
+│   │   ├── addresses.controller.ts
+│   │   └── ai.controller.ts          # 🤖 NEW AI Controller
+│   ├── routes/
+│   │   ├── auth.routes.ts
+│   │   ├── products.routes.ts
+│   │   ├── orders.routes.ts
+│   │   ├── cart.routes.ts
+│   │   ├── addresses.routes.ts
+│   │   └── ai.routes.ts              # 🤖 NEW AI Routes
+│   ├── middleware/
+│   │   ├── auth.middleware.ts
+│   │   ├── validation.middleware.ts
+│   │   └── error.middleware.ts
+│   ├── services/
+│   │   └── ai.service.ts             # 🤖 NEW AI Service
+│   ├── utils/
+│   │   ├── jwt.ts
+│   │   ├── stripe.ts
+│   │   ├── oauth.ts
+│   │   └── email.ts
+│   ├── types/
+│   │   ├── express.d.ts
+│   │   └── api.types.ts
+│   └── server.ts
+├── prisma/
+│   ├── schema.prisma
+│   └── seed.ts
+└── package.json
+```
+
+### 🎨 Frontend Structure
+```
+frontend/
+├── src/
+│   ├── app/
+│   │   ├── (auth)/
+│   │   │   ├── login/page.tsx
+│   │   │   ├── register/page.tsx
+│   │   │   └── layout.tsx
+│   │   ├── (shop)/
+│   │   │   ├── page.tsx
+│   │   │   ├── products/
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── [id]/page.tsx
+│   │   │   ├── cart/page.tsx
+│   │   │   └── checkout/page.tsx
+│   │   ├── account/
+│   │   │   ├── page.tsx
+│   │   │   ├── addresses/page.tsx
+│   │   │   └── orders/
+│   │   │       ├── page.tsx
+│   │   │       └── [id]/page.tsx
+│   │   ├── api/
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── components/
+│   │   ├── ui/
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   ├── Card.tsx
+│   │   │   └── Modal.tsx
+│   │   ├── layout/
+│   │   │   ├── Header.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   └── Navbar.tsx
+│   │   ├── auth/
+│   │   │   ├── LoginForm.tsx
+│   │   │   ├── RegisterForm.tsx
+│   │   │   └── SocialLogin.tsx
+│   │   ├── products/
+│   │   │   ├── ProductCard.tsx
+│   │   │   ├── ProductGrid.tsx
+│   │   │   └── ProductDetails.tsx
+│   │   ├── cart/
+│   │   │   ├── CartItem.tsx
+│   │   │   ├── CartSummary.tsx
+│   │   │   └── AddToCart.tsx
+│   │   ├── checkout/
+│   │   │   ├── AddressForm.tsx
+│   │   │   ├── PaymentForm.tsx
+│   │   │   └── OrderSummary.tsx
+│   │   └── ai-assistant/            # 🤖 NEW AI Components
+│   │       ├── ChatWidget.tsx
+│   │       ├── ChatMessage.tsx
+│   │       └── ProductSuggestions.tsx
+│   ├── lib/
+│   │   ├── auth.ts
+│   │   ├── api.ts
+│   │   ├── store.ts
+│   │   ├── utils.ts
+│   │   └── constants.ts
+│   ├── hooks/
+│   │   ├── useAuth.ts
+│   │   ├── useCart.ts
+│   │   ├── useProducts.ts
+│   │   ├── useOrders.ts
+│   │   └── useChatAssistant.ts      # 🤖 NEW AI Hook
+│   ├── types/
+│   │   ├── auth.types.ts
+│   │   ├── product.types.ts
+│   │   ├── order.types.ts
+│   │   ├── api.types.ts
+│   │   └── ai.types.ts              # 🤖 NEW AI Types
+│   └── styles/
+│       └── globals.css
+├── public/
+├── package.json
+└── next.config.js
+```
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -86,7 +247,6 @@
 
 ### 1. Clone & Setup
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd nexus-shop
 
@@ -152,49 +312,6 @@ echo "Frontend: http://localhost:3000"
 echo "Backend API: http://localhost:5001/api"
 echo "AI Health: http://localhost:5001/api/ai/health"
 echo "PgAdmin: http://localhost:5050"
-```
-
----
-
-## 📁 Project Structure
-
-```
-nexus-shop/
-├── 🎨 frontend/                 # Next.js 15 Application
-│   ├── src/app/                # App Router Pages
-│   │   ├── (auth)/            # Authentication Routes
-│   │   ├── (shop)/            # Shopping Routes
-│   │   ├── account/           # User Dashboard
-│   │   └── api/               # API Routes
-│   ├── src/components/        # React Components
-│   │   ├── ui/                # Base UI Components
-│   │   ├── auth/              # Auth Components
-│   │   ├── products/          # Product Components
-│   │   ├── cart/              # Cart Components
-│   │   ├── checkout/          # Checkout Components
-│   │   └── ai-assistant/      # 🤖 AI Assistant Components
-│   ├── src/lib/               # Utilities & Config
-│   └── src/types/             # TypeScript Definitions
-│
-├── 🔧 backend/                 # Express.js API
-│   ├── src/
-│   │   ├── controllers/       # Business Logic
-│   │   ├── routes/            # API Routes
-│   │   ├── middleware/        # Custom Middleware
-│   │   ├── services/          # 🤖 AI Services
-│   │   ├── utils/             # Utilities
-│   │   └── types/             # Type Definitions
-│   ├── prisma/                # Database Schema
-│   └── docker-compose.yml     # Backend Services
-│
-├── 📊 scripts/                # Utility Scripts
-│   ├── security-audit.sh      # Security Testing
-│   ├── system-test.sh         # System Validation
-│   ├── test-ai-assistant.sh   # 🤖 AI Testing
-│   └── deployment/            # Deployment Scripts
-│
-├── 🐳 docker-compose.yml      # Main Docker Compose
-└── 📚 README.md              # Project Documentation
 ```
 
 ---
@@ -289,6 +406,15 @@ POST   /api/payments/intent # Create payment intent
 POST   /api/payments/webhook # Stripe webhook
 ```
 
+### 🏠 Addresses
+```http
+GET    /api/addresses       # User addresses
+POST   /api/addresses       # Create address
+PUT    /api/addresses/:id   # Update address
+DELETE /api/addresses/:id   # Delete address
+PUT    /api/addresses/:id/default # Set default address
+```
+
 ---
 
 ## 🛡️ Security Features
@@ -313,15 +439,12 @@ POST   /api/payments/webhook # Stripe webhook
 ### 🧪 Security Testing
 ```bash
 # Run security audit
-chmod +x scripts/security-audit.sh
 ./scripts/security-audit.sh
 
 # Run AI-specific security tests
-chmod +x scripts/test-ai-security.sh
 ./scripts/test-ai-security.sh
 
 # Run system tests
-chmod +x scripts/system-test.sh
 ./scripts/system-test.sh
 ```
 
